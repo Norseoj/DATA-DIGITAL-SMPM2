@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { collection, onSnapshot, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { syncToFirestore, deleteFromFirestore, isCollectionEmpty, bulkSyncToFirestore } from '../lib/db';
 import {
   Siswa,
   GuruBTQ,
@@ -96,7 +99,7 @@ const defaultCredentials: UserCredentials[] = [
 ];
 
 // Define default lists
-const defaultKelas: Kelas[] = [
+export const defaultKelas: Kelas[] = [
   { id: 'K7A', kelas: 7, subKelas: '7 Abu Bakar', isKelasAkhir: false, shiftId: 'S01' },
   { id: 'K7B', kelas: 7, subKelas: '7 Umar', isKelasAkhir: false, shiftId: 'S02' },
   { id: 'K8A', kelas: 8, subKelas: '8 Utsman', isKelasAkhir: false, shiftId: 'S01' },
@@ -105,26 +108,26 @@ const defaultKelas: Kelas[] = [
   { id: 'K9B', kelas: 9, subKelas: '9 Khalid (Sembilan B)', isKelasAkhir: true, shiftId: 'S03' }
 ];
 
-const defaultGuruBTQ: GuruBTQ[] = [
+export const defaultGuruBTQ: GuruBTQ[] = [
   { id: 'G01', namaLengkap: 'Ustadz H. Ahmad Sobari', gender: 'LK', tempatLahir: 'Cirebon', tanggalLahir: '1980-05-12', kodeGuru: 'G01' },
   { id: 'G02', namaLengkap: 'Ustadzah Siti Khadijah', gender: 'PR', tempatLahir: 'Cirebon', tanggalLahir: '1985-08-20', kodeGuru: 'G02' },
   { id: 'G03', namaLengkap: 'Ustadz Yahya Muhaimin', gender: 'LK', tempatLahir: 'Indramayu', tanggalLahir: '1991-03-15', kodeGuru: 'G03' },
   { id: 'G04', namaLengkap: 'Ustadzah Nur Layla', gender: 'PR', tempatLahir: 'Cirebon', tanggalLahir: '1994-11-04', kodeGuru: 'G04' }
 ];
 
-const defaultGuruBinaan: GuruBinaan[] = [
+export const defaultGuruBinaan: GuruBinaan[] = [
   { id: 'GB01', namaLengkap: 'Ustadzah Annisa Fitri', gender: 'PR', tempatLahir: 'Cirebon', tanggalLahir: '1998-02-14', kodeGuruBinaan: 'GB01', jilid: '1A', guruKodeBTQ: 'G01' },
   { id: 'GB02', namaLengkap: 'Ustadz Wildan Syah', gender: 'LK', tempatLahir: 'Kuningan', tanggalLahir: '1999-07-22', kodeGuruBinaan: 'GB02', jilid: '2A', guruKodeBTQ: 'G02' },
   { id: 'GB03', namaLengkap: 'Ustadzah Fatimah Azzahra', gender: 'PR', tempatLahir: 'Cirebon', tanggalLahir: '1997-12-01', kodeGuruBinaan: 'GB03', jilid: '3A', guruKodeBTQ: 'G03' }
 ];
 
-const defaultJadwalShift: JadwalShift[] = [
+export const defaultJadwalShift: JadwalShift[] = [
   { id: 'S01', namaShift: 'Shift Pagi (Utama)', hari: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'], jam: '07:00 - 08:15' },
   { id: 'S02', namaShift: 'Shift Siang (Tambahan)', hari: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'], jam: '13:00 - 14:15' },
   { id: 'S03', namaShift: 'Shift Sore (Intensif)', hari: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'], jam: '15:45 - 17:00' }
 ];
 
-const defaultHariLibur: HariLibur[] = [
+export const defaultHariLibur: HariLibur[] = [
   { id: 'H01', bulan: 'Mei', tanggal: '2026-05-01', shiftId: 'semua', kelasId: 'semua', keterangan: 'Hari Buruh Internasional' },
   { id: 'H02', bulan: 'Mei', tanggal: '2026-05-14', shiftId: 'semua', kelasId: 'semua', keterangan: 'Kenaikan Isa Almasih' },
   { id: 'H03', bulan: 'Juni', tanggal: '2026-06-01', shiftId: 'semua', kelasId: 'semua', keterangan: 'Hari Lahir Pancasila' },
@@ -132,7 +135,7 @@ const defaultHariLibur: HariLibur[] = [
   { id: 'H05', bulan: 'Juni', tanggal: '2026-06-25', shiftId: 'S03', kelasId: 'semua', keterangan: 'Rapat Persiapan Ujian Akhir (Shift Sore Libur)' }
 ];
 
-const defaultStokJilid: StokJilid[] = [
+export const defaultStokJilid: StokJilid[] = [
   { jilid: '1A', stok: 45, harga: 15000 },
   { jilid: '1B', stok: 40, harga: 15000 },
   { jilid: '2A', stok: 35, harga: 15000 },
@@ -149,7 +152,7 @@ const defaultStokJilid: StokJilid[] = [
   { jilid: 'Tahfidz', stok: 20, harga: 20000 }
 ];
 
-const defaultSiswa: Siswa[] = [
+export const defaultSiswa: Siswa[] = [
   { id: 'S01', namaLengkap: 'Ahmad Fauzi', gender: 'LK', tempatLahir: 'Cirebon', tanggalLahir: '2012-04-12', namaAyah: 'Sutisna', namaIbu: 'Siti Aminah', alamat: 'Jl. Tuparev No. 12, Kedawung, Cirebon', kelasId: 'K7A', jilid: '1B', guruKode: 'G01', isLulus: false },
   { id: 'S02', namaLengkap: 'Siti Aminah', gender: 'PR', tempatLahir: 'Cirebon', tanggalLahir: '2012-08-22', namaAyah: 'Mulyadi', namaIbu: 'Halimah', alamat: 'Jl. Kartini No. 45, Kejaksan, Cirebon', kelasId: 'K7A', jilid: '1B', guruKode: 'G01', isLulus: false },
   { id: 'S03', namaLengkap: 'Fathir Muhammad', gender: 'LK', tempatLahir: 'Cirebon', tanggalLahir: '2012-01-05', namaAyah: 'Lukman Hakim', namaIbu: 'Siti Sarah', alamat: 'Jl. Siliwangi No. 8, Kejaksan, Cirebon', kelasId: 'K7B', jilid: '2A', guruKode: 'G02', isLulus: false },
@@ -170,13 +173,13 @@ const defaultSiswa: Siswa[] = [
   { id: 'S16', namaLengkap: 'Safira Amalia', gender: 'PR', tempatLahir: 'Cirebon', tanggalLahir: '2009-12-01', namaAyah: 'Agus', namaIbu: 'Indah', alamat: 'Jl. Kartini No. 12, Cirebon', kelasId: 'K9B', jilid: 'Finishing', guruKode: 'G02', isLulus: true, tanggalLulus: '2025-06-15', statusKhatam: true, tanggalKhatam: '2025-05-12', nilaiKhatam: '94 (A)', nomorSertifikat: 'SRT/BTQ/2025/090' }
 ];
 
-const defaultPengajuanTes: PengajuanTes[] = [
+export const defaultPengajuanTes: PengajuanTes[] = [
   { id: 'T01', siswaId: 'S03', jilidAsal: '2A', jilidTujuan: '2B', tanggalPengajuan: '2026-06-27', status: 'Pending' },
   { id: 'T02', siswaId: 'S14', jilidAsal: '3B', jilidTujuan: '4A', tanggalPengajuan: '2026-06-28', status: 'Pending' },
   { id: 'T03', siswaId: 'S01', jilidAsal: '1A', jilidTujuan: '1B', tanggalPengajuan: '2026-06-25', status: 'Disetujui', diujiOleh: 'PJ - Ustadz Ahmad Sobari', tanggalUji: '2026-06-26', catatan: 'Alhamdulillah lancar, makhraj fasih, jilid naik ke 1B.' }
 ];
 
-const defaultTransaksi: TransaksiKeuangan[] = [
+export const defaultTransaksi: TransaksiKeuangan[] = [
   { id: 'TR01', siswaId: 'S01', jenis: 'Syahriah', jumlah: 50000, tanggal: '2026-06-05', status: 'Lunas', keterangan: 'Iuran Syahriah BTQ Juni 2026' },
   { id: 'TR02', siswaId: 'S02', jenis: 'Pembelian Jilid', jumlah: 15000, tanggal: '2026-06-06', status: 'Lunas', keterangan: 'Pembelian Buku Qiroati Jilid 1B' },
   { id: 'TR03', siswaId: 'S04', jenis: 'Syahriah', jumlah: 50000, tanggal: '2026-06-10', status: 'Lunas', keterangan: 'Iuran Syahriah BTQ Juni 2026' },
@@ -188,7 +191,7 @@ const defaultTransaksi: TransaksiKeuangan[] = [
 // while adhering to the user's specific rules:
 // - Juz 27, Ghorib, Tajwid, Finishing groups have matching daily progress.
 // - Excluding weekends
-function generateHistoricalLogs(siswas: Siswa[]): CapaianHarian[] {
+export function generateHistoricalLogs(siswas: Siswa[]): CapaianHarian[] {
   const logs: CapaianHarian[] = [];
   const activeSiswa = siswas.filter(s => !s.isLulus);
   
@@ -354,17 +357,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Initialize data once on mount
   useEffect(() => {
-    const localSiswa = localStorage.getItem('btq_siswa');
-    const localGuruBTQ = localStorage.getItem('btq_guru_btq');
-    const localGuruBinaan = localStorage.getItem('btq_guru_binaan');
-    const localJadwal = localStorage.getItem('btq_jadwal_shift');
-    const localLibur = localStorage.getItem('btq_hari_libur');
-    const localKelas = localStorage.getItem('btq_kelas');
-    const localCapaian = localStorage.getItem('btq_capaian');
-    const localPindah = localStorage.getItem('btq_pindah_sementara');
-    const localPengajuan = localStorage.getItem('btq_pengajuan_tes');
-    const localStok = localStorage.getItem('btq_stok_jilid');
-    const localTransaksi = localStorage.getItem('btq_transaksi');
+    const unsubSiswa = onSnapshot(collection(db, 'siswa'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as Siswa);
+      if (data.length > 0) setSiswaList(data);
+    });
+
+    const unsubGuruBTQ = onSnapshot(collection(db, 'guruBTQ'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as GuruBTQ);
+      if (data.length > 0) setGuruBTQList(data);
+    });
+
+    const unsubGuruBinaan = onSnapshot(collection(db, 'guruBinaan'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as GuruBinaan);
+      if (data.length > 0) setGuruBinaanList(data);
+    });
+
+    const unsubJadwalShift = onSnapshot(collection(db, 'jadwalShift'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as JadwalShift);
+      if (data.length > 0) setJadwalShiftList(data);
+    });
+
+    const unsubHariLibur = onSnapshot(collection(db, 'hariLibur'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as HariLibur);
+      if (data.length > 0) setHariLiburList(data);
+    });
+
+    const unsubKelas = onSnapshot(collection(db, 'kelas'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as Kelas);
+      if (data.length > 0) setKelasList(data);
+    });
+
+    const unsubCapaianHarian = onSnapshot(collection(db, 'capaianHarian'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as CapaianHarian);
+      if (data.length > 0) setCapaianHarianList(data);
+    });
+
+    const unsubPindahSementara = onSnapshot(collection(db, 'pindahSementara'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as PindahSementara);
+      if (data.length > 0) setPindahSementaraList(data);
+    });
+
+    const unsubPengajuanTes = onSnapshot(collection(db, 'pengajuanTes'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as PengajuanTes);
+      if (data.length > 0) setPengajuanTesList(data);
+    });
+
+    const unsubStokJilid = onSnapshot(collection(db, 'stokJilid'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as StokJilid);
+      if (data.length > 0) setStokJilidList(data);
+    });
+
+    const unsubTransaksi = onSnapshot(collection(db, 'transaksiKeuangan'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as TransaksiKeuangan);
+      if (data.length > 0) setTransaksiKeuanganList(data);
+    });
+
     const localRole = localStorage.getItem('btq_active_role');
     const localUserKode = localStorage.getItem('btq_active_user_kode');
 
@@ -398,134 +445,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }));
     }
 
-    let loadedKelas = defaultKelas;
-    if (localKelas) {
-      loadedKelas = JSON.parse(localKelas);
-    } else {
-      localStorage.setItem('btq_kelas', JSON.stringify(defaultKelas));
-    }
-    setKelasList(loadedKelas);
-
-    let loadedSiswa = defaultSiswa;
-    if (localSiswa) {
-      loadedSiswa = JSON.parse(localSiswa);
-    } else {
-      localStorage.setItem('btq_siswa', JSON.stringify(defaultSiswa));
-    }
-
-    // Automatic Class Promotion Check (Awal Juli)
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth(); // 0-indexed, 6 is July
-    const lastPromotionYearStr = localStorage.getItem('btq_last_promotion_year');
-    let isPromotionRun = false;
-
-    if (currentMonth >= 6) { // July or later
-      if (!lastPromotionYearStr || parseInt(lastPromotionYearStr, 10) < currentYear) {
-        loadedSiswa = loadedSiswa.map(siswa => {
-          if (siswa.isLulus) return siswa;
-          const currentKelas = loadedKelas.find(k => k.id === siswa.kelasId);
-          if (!currentKelas) return siswa;
-          
-          if (currentKelas.kelas === 7) {
-            const suffix = siswa.kelasId.replace('K7', '');
-            const nextKelasId = `K8${suffix}`;
-            const exists = loadedKelas.some(k => k.id === nextKelasId);
-            return { ...siswa, kelasId: exists ? nextKelasId : (loadedKelas.find(k => k.kelas === 8)?.id || siswa.kelasId) };
-          } else if (currentKelas.kelas === 8) {
-            const suffix = siswa.kelasId.replace('K8', '');
-            const nextKelasId = `K9${suffix}`;
-            const exists = loadedKelas.some(k => k.id === nextKelasId);
-            return { ...siswa, kelasId: exists ? nextKelasId : (loadedKelas.find(k => k.kelas === 9)?.id || siswa.kelasId) };
-          } else if (currentKelas.kelas === 9 || currentKelas.isKelasAkhir) {
-            return {
-              ...siswa,
-              isLulus: true,
-              tanggalLulus: `${currentYear}-07-01`,
-              statusKhatam: true,
-              tanggalKhatam: `${currentYear}-07-01`,
-              nilaiKhatam: '88 (B)',
-              nomorSertifikat: `SRT/BTQ/AUTO/${currentYear}${Math.floor(Math.random() * 900) + 100}`
-            };
-          }
-          return siswa;
-        });
-        localStorage.setItem('btq_last_promotion_year', currentYear.toString());
-        localStorage.setItem('btq_siswa', JSON.stringify(loadedSiswa));
-        isPromotionRun = true;
-      }
-    }
-
-    setSiswaList(loadedSiswa);
-
-    if (localGuruBTQ) {
-      setGuruBTQList(JSON.parse(localGuruBTQ));
-    } else {
-      setGuruBTQList(defaultGuruBTQ);
-      localStorage.setItem('btq_guru_btq', JSON.stringify(defaultGuruBTQ));
-    }
-
-    if (localGuruBinaan) {
-      setGuruBinaanList(JSON.parse(localGuruBinaan));
-    } else {
-      setGuruBinaanList(defaultGuruBinaan);
-      localStorage.setItem('btq_guru_binaan', JSON.stringify(defaultGuruBinaan));
-    }
-
-    if (localJadwal) {
-      setJadwalShiftList(JSON.parse(localJadwal));
-    } else {
-      setJadwalShiftList(defaultJadwalShift);
-      localStorage.setItem('btq_jadwal_shift', JSON.stringify(defaultJadwalShift));
-    }
-
-    if (localLibur) {
-      setHariLiburList(JSON.parse(localLibur));
-    } else {
-      setHariLiburList(defaultHariLibur);
-      localStorage.setItem('btq_hari_libur', JSON.stringify(defaultHariLibur));
-    }
-
-    if (localPindah) {
-      // Filter out temporary moves older than 12 hours
-      const parsed: PindahSementara[] = JSON.parse(localPindah);
-      const now = Date.now();
-      const valid = parsed.filter(p => now - p.timestamp < 12 * 60 * 60 * 1000);
-      setPindahSementaraList(valid);
-      localStorage.setItem('btq_pindah_sementara', JSON.stringify(valid));
-    } else {
-      setPindahSementaraList([]);
-    }
-
-    if (localPengajuan) {
-      setPengajuanTesList(JSON.parse(localPengajuan));
-    } else {
-      setPengajuanTesList(defaultPengajuanTes);
-      localStorage.setItem('btq_pengajuan_tes', JSON.stringify(defaultPengajuanTes));
-    }
-
-    if (localStok) {
-      setStokJilidList(JSON.parse(localStok));
-    } else {
-      setStokJilidList(defaultStokJilid);
-      localStorage.setItem('btq_stok_jilid', JSON.stringify(defaultStokJilid));
-    }
-
-    if (localTransaksi) {
-      setTransaksiKeuanganList(JSON.parse(localTransaksi));
-    } else {
-      setTransaksiKeuanganList(defaultTransaksi);
-      localStorage.setItem('btq_transaksi', JSON.stringify(defaultTransaksi));
-    }
-
-    // Initialize or load Capaian Logs
-    if (localCapaian) {
-      setCapaianHarianList(JSON.parse(localCapaian));
-    } else {
-      const generated = generateHistoricalLogs(loadedSiswa);
-      setCapaianHarianList(generated);
-      localStorage.setItem('btq_capaian', JSON.stringify(generated));
-    }
+    return () => {
+      unsubSiswa();
+      unsubGuruBTQ();
+      unsubGuruBinaan();
+      unsubJadwalShift();
+      unsubHariLibur();
+      unsubKelas();
+      unsubCapaianHarian();
+      unsubPindahSementara();
+      unsubPengajuanTes();
+      unsubStokJilid();
+      unsubTransaksi();
+    };
   }, []);
 
   // Save changes wrapper helpers
@@ -602,32 +534,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isLulus: false
     };
     saveSiswaList([...siswaList, newSiswa]);
+    syncToFirestore('siswa', newSiswa.id, newSiswa);
   };
 
   const updateSiswa = (id: string, updates: Partial<Siswa>) => {
-    const updated = siswaList.map(s => s.id === id ? { ...s, ...updates } : s);
-    saveSiswaList(updated);
+    const existing = siswaList.find(s => s.id === id);
+    if (existing) {
+      const updatedSiswa = { ...existing, ...updates };
+      saveSiswaList(siswaList.map(s => s.id === id ? updatedSiswa : s));
+      syncToFirestore('siswa', id, updatedSiswa);
+    }
   };
 
   const deleteSiswa = (id: string) => {
     saveSiswaList(siswaList.filter(s => s.id !== id));
+    deleteFromFirestore('siswa', id);
   };
 
   const graduatedSiswa = (
     id: string, 
     details: { tanggalLulus: string; statusKhatam?: boolean; tanggalKhatam?: string; nilaiKhatam?: string; nomorSertifikat?: string }
   ) => {
-    const updated = siswaList.map(s => {
-      if (s.id === id) {
-        return {
-          ...s,
-          isLulus: true,
-          ...details
-        };
-      }
-      return s;
-    });
-    saveSiswaList(updated);
+    const existing = siswaList.find(s => s.id === id);
+    if (existing) {
+      const updatedSiswa = {
+        ...existing,
+        isLulus: true,
+        ...details
+      };
+      saveSiswaList(siswaList.map(s => s.id === id ? updatedSiswa : s));
+      syncToFirestore('siswa', id, updatedSiswa);
+    }
   };
 
   const addGuruBTQ = (guru: Omit<GuruBTQ, 'id'>) => {
@@ -636,15 +573,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `G_${Date.now()}`
     };
     saveGuruBTQList([...guruBTQList, newGuru]);
+    syncToFirestore('guruBTQ', newGuru.id, newGuru);
   };
 
   const updateGuruBTQ = (id: string, updates: Partial<GuruBTQ>) => {
-    const updated = guruBTQList.map(g => g.id === id ? { ...g, ...updates } : g);
-    saveGuruBTQList(updated);
+    const existing = guruBTQList.find(g => g.id === id);
+    if (existing) {
+      const updatedGuru = { ...existing, ...updates };
+      saveGuruBTQList(guruBTQList.map(g => g.id === id ? updatedGuru : g));
+      syncToFirestore('guruBTQ', id, updatedGuru);
+    }
   };
 
   const deleteGuruBTQ = (id: string) => {
     saveGuruBTQList(guruBTQList.filter(g => g.id !== id));
+    deleteFromFirestore('guruBTQ', id);
   };
 
   const addGuruBinaan = (guru: Omit<GuruBinaan, 'id'>) => {
@@ -653,15 +596,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `GB_${Date.now()}`
     };
     saveGuruBinaanList([...guruBinaanList, newGuru]);
+    syncToFirestore('guruBinaan', newGuru.id, newGuru);
   };
 
   const updateGuruBinaan = (id: string, updates: Partial<GuruBinaan>) => {
-    const updated = guruBinaanList.map(g => g.id === id ? { ...g, ...updates } : g);
-    saveGuruBinaanList(updated);
+    const existing = guruBinaanList.find(g => g.id === id);
+    if (existing) {
+      const updated = { ...existing, ...updates };
+      saveGuruBinaanList(guruBinaanList.map(g => g.id === id ? updated : g));
+      syncToFirestore('guruBinaan', id, updated);
+    }
   };
 
   const deleteGuruBinaan = (id: string) => {
     saveGuruBinaanList(guruBinaanList.filter(g => g.id !== id));
+    deleteFromFirestore('guruBinaan', id);
   };
 
   const addJadwalShift = (shift: Omit<JadwalShift, 'id'>) => {
@@ -670,15 +619,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `S_${Date.now()}`
     };
     saveJadwalShiftList([...jadwalShiftList, newShift]);
+    syncToFirestore('jadwalShift', newShift.id, newShift);
   };
 
   const updateJadwalShift = (id: string, updates: Partial<JadwalShift>) => {
-    const updated = jadwalShiftList.map(s => s.id === id ? { ...s, ...updates } : s);
-    saveJadwalShiftList(updated);
+    const existing = jadwalShiftList.find(s => s.id === id);
+    if (existing) {
+      const updated = { ...existing, ...updates };
+      saveJadwalShiftList(jadwalShiftList.map(s => s.id === id ? updated : s));
+      syncToFirestore('jadwalShift', id, updated);
+    }
   };
 
   const deleteJadwalShift = (id: string) => {
     saveJadwalShiftList(jadwalShiftList.filter(s => s.id !== id));
+    deleteFromFirestore('jadwalShift', id);
   };
 
   const addHariLibur = (libur: Omit<HariLibur, 'id'>) => {
@@ -687,15 +642,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `H_${Date.now()}`
     };
     saveHariLiburList([...hariLiburList, newLibur]);
+    syncToFirestore('hariLibur', newLibur.id, newLibur);
   };
 
   const updateHariLibur = (id: string, updates: Partial<HariLibur>) => {
-    const updated = hariLiburList.map(h => h.id === id ? { ...h, ...updates } : h);
-    saveHariLiburList(updated);
+    const existing = hariLiburList.find(h => h.id === id);
+    if (existing) {
+      const updated = { ...existing, ...updates };
+      saveHariLiburList(hariLiburList.map(h => h.id === id ? updated : h));
+      syncToFirestore('hariLibur', id, updated);
+    }
   };
 
   const deleteHariLibur = (id: string) => {
     saveHariLiburList(hariLiburList.filter(h => h.id !== id));
+    deleteFromFirestore('hariLibur', id);
   };
 
   const addKelas = (kelas: Omit<Kelas, 'id'>) => {
@@ -704,15 +665,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `K_${Date.now()}`
     };
     saveKelasList([...kelasList, newKelas]);
+    syncToFirestore('kelas', newKelas.id, newKelas);
   };
 
   const updateKelas = (id: string, updates: Partial<Kelas>) => {
-    const updated = kelasList.map(k => k.id === id ? { ...k, ...updates } : k);
-    saveKelasList(updated);
+    const existing = kelasList.find(k => k.id === id);
+    if (existing) {
+      const updated = { ...existing, ...updates };
+      saveKelasList(kelasList.map(k => k.id === id ? updated : k));
+      syncToFirestore('kelas', id, updated);
+    }
   };
 
   const deleteKelas = (id: string) => {
     saveKelasList(kelasList.filter(k => k.id !== id));
+    deleteFromFirestore('kelas', id);
   };
 
   const saveKehadiranAndCapaian = (records: Omit<CapaianHarian, 'id'>[]) => {
@@ -728,6 +695,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const merged = [...filtered, ...newRecords];
     saveCapaianHarianList(merged);
+    
+    // Write new records to firestore
+    newRecords.forEach(nr => syncToFirestore('capaianHarian', nr.id, nr));
 
     // Dynamic synchrony propagation!
     // "siswa jilid Juz 27 pada kelompok yang sama capaian hariannya sama, begitupun dengan Ghorib, Tajwid dan Finishing masing-masing"
@@ -738,6 +708,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Check if any of our newly saved records are of sync jilids
     let syncListToPropagate: CapaianHarian[] = [...merged];
     let didSync = false;
+    let autoGeneratedRecords: CapaianHarian[] = [];
 
     newRecords.forEach(rec => {
       const sis = siswaList.find(s => s.id === rec.siswaId);
@@ -765,12 +736,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 ...syncListToPropagate[existingLogIndex],
                 capaian: syncedCapaian
               };
+              autoGeneratedRecords.push(syncListToPropagate[existingLogIndex]);
               didSync = true;
             }
           } else {
             delete syncedCapaian.ket;
             // Auto generate record for them too to keep synchrony!
-            syncListToPropagate.push({
+            const newLog = {
               id: `LOG_${gs.id}_${rec.tanggal}`,
               siswaId: gs.id,
               tanggal: rec.tanggal,
@@ -779,7 +751,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               keterangan: 'Disamakan dengan kelompok',
               shiftId: rec.shiftId,
               guruKode: rec.guruKode
-            });
+            };
+            syncListToPropagate.push(newLog);
+            autoGeneratedRecords.push(newLog as CapaianHarian);
             didSync = true;
           }
         });
@@ -788,6 +762,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (didSync) {
       saveCapaianHarianList(syncListToPropagate);
+      autoGeneratedRecords.forEach(ar => syncToFirestore('capaianHarian', ar.id, ar));
     }
   };
 
@@ -798,10 +773,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       timestamp: Date.now()
     };
     savePindahSementaraList([...pindahSementaraList, newPindah]);
+    syncToFirestore('pindahSementara', newPindah.id, newPindah);
   };
 
   const clearPindahSementara = (id: string) => {
     savePindahSementaraList(pindahSementaraList.filter(p => p.id !== id));
+    deleteFromFirestore('pindahSementara', id);
   };
 
   const ajukanTes = (siswaId: string, jilidAsal: JilidType, jilidTujuan: JilidType) => {
@@ -818,42 +795,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'Pending'
     };
     savePengajuanTesList([...pengajuanTesList, newRequest]);
+    syncToFirestore('pengajuanTes', newRequest.id, newRequest);
   };
 
   const verifikasiTes = (id: string, status: 'Disetujui' | 'Ditolak', diujiOleh: string, catatan: string) => {
-    const updated = pengajuanTesList.map(p => {
-      if (p.id === id) {
-        const testRes = {
-          ...p,
-          status,
-          diujiOleh,
-          tanggalUji: new Date().toISOString().split('T')[0],
-          catatan
-        };
+    const existing = pengajuanTesList.find(p => p.id === id);
+    if (existing) {
+      const testRes = {
+        ...existing,
+        status,
+        diujiOleh,
+        tanggalUji: new Date().toISOString().split('T')[0],
+        catatan
+      };
 
-        // If approved, automatically upgrade the student's Jilid!
-        if (status === 'Disetujui') {
-          updateSiswa(p.siswaId, { jilid: p.jilidTujuan });
-        }
-
-        return testRes;
+      // If approved, automatically upgrade the student's Jilid!
+      if (status === 'Disetujui') {
+        updateSiswa(existing.siswaId, { jilid: existing.jilidTujuan });
       }
-      return p;
-    });
-    savePengajuanTesList(updated);
+
+      savePengajuanTesList(pengajuanTesList.map(p => p.id === id ? testRes : p));
+      syncToFirestore('pengajuanTes', id, testRes);
+    }
   };
 
   const updateStokJilid = (jilid: JilidType, jumlah: number, isSet = false) => {
-    const updated = stokJilidList.map(s => {
-      if (s.jilid === jilid) {
-        return {
-          ...s,
-          stok: isSet ? jumlah : Math.max(0, s.stok + jumlah)
-        };
-      }
-      return s;
-    });
-    saveStokJilidList(updated);
+    const existing = stokJilidList.find(s => s.jilid === jilid);
+    if (existing) {
+      const updatedStok = {
+        ...existing,
+        stok: isSet ? jumlah : Math.max(0, existing.stok + jumlah)
+      };
+      saveStokJilidList(stokJilidList.map(s => s.jilid === jilid ? updatedStok : s));
+      // Using jilid as document ID for stok
+      syncToFirestore('stokJilid', jilid, updatedStok);
+    }
   };
 
   const addTransaksi = (transaksi: Omit<TransaksiKeuangan, 'id'>) => {
@@ -862,6 +838,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `TR_${Date.now()}`
     };
     saveTransaksiList([...transaksiKeuanganList, newTrans]);
+    syncToFirestore('transaksiKeuangan', newTrans.id, newTrans);
 
     // If it is a book purchase (Pembelian Jilid) and is paid (Lunas), let's automatically reduce book stock!
     if (transaksi.jenis === 'Pembelian Jilid' && transaksi.status === 'Lunas') {
@@ -879,28 +856,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateTransaksiStatus = (id: string, status: 'Lunas' | 'Belum Lunas') => {
-    const updated = transaksiKeuanganList.map(t => {
-      if (t.id === id) {
-        // If status changes to Lunas and it was a book purchase, reduce stock
-        if (status === 'Lunas' && t.status === 'Belum Lunas' && t.jenis === 'Pembelian Jilid') {
-          let purchasedJilid: JilidType | undefined;
-          if (t.siswaId) {
-            const sis = siswaList.find(s => s.id === t.siswaId);
-            if (sis) purchasedJilid = sis.jilid;
-          }
-          if (purchasedJilid) {
-            updateStokJilid(purchasedJilid, -1);
-          }
+    const existing = transaksiKeuanganList.find(t => t.id === id);
+    if (existing) {
+      // If status changes to Lunas and it was a book purchase, reduce stock
+      if (status === 'Lunas' && existing.status === 'Belum Lunas' && existing.jenis === 'Pembelian Jilid') {
+        let purchasedJilid: JilidType | undefined;
+        if (existing.siswaId) {
+          const sis = siswaList.find(s => s.id === existing.siswaId);
+          if (sis) purchasedJilid = sis.jilid;
         }
-        return { ...t, status };
+        if (purchasedJilid) {
+          updateStokJilid(purchasedJilid, -1);
+        }
       }
-      return t;
-    });
-    saveTransaksiList(updated);
+      const updatedTrans = { ...existing, status };
+      saveTransaksiList(transaksiKeuanganList.map(t => t.id === id ? updatedTrans : t));
+      syncToFirestore('transaksiKeuangan', id, updatedTrans);
+    }
   };
 
   const deleteTransaksi = (id: string) => {
     saveTransaksiList(transaksiKeuanganList.filter(t => t.id !== id));
+    deleteFromFirestore('transaksiKeuangan', id);
   };
 
   const updateCredentials = (role: 'pj' | 'admin' | 'bendahara' | 'guru', username: string, password?: string) => {
@@ -1009,6 +986,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     saveSiswaList(promoted);
     localStorage.setItem('btq_last_promotion_year', new Date().getFullYear().toString());
+    promoted.forEach(p => syncToFirestore('siswa', p.id, p));
   };
 
   return (

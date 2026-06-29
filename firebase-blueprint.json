@@ -1,0 +1,149 @@
+{
+  "collections": [
+    {
+      "collection_id": "siswa",
+      "description": "Store all student data",
+      "document_schema": {
+        "namaLengkap": "string",
+        "gender": "string",
+        "tempatLahir": "string",
+        "tanggalLahir": "string",
+        "namaAyah": "string",
+        "namaIbu": "string",
+        "alamat": "string",
+        "kelasId": "string",
+        "jilid": "string",
+        "guruKode": "string",
+        "isLulus": "boolean",
+        "tanggalLulus": "string",
+        "statusKhatam": "boolean",
+        "tanggalKhatam": "string",
+        "nilaiKhatam": "string",
+        "nomorSertifikat": "string"
+      }
+    },
+    {
+      "collection_id": "guruBTQ",
+      "description": "Store all Guru BTQ data",
+      "document_schema": {
+        "namaLengkap": "string",
+        "gender": "string",
+        "tempatLahir": "string",
+        "tanggalLahir": "string",
+        "kodeGuru": "string"
+      }
+    },
+    {
+      "collection_id": "guruBinaan",
+      "description": "Store all Guru Binaan data",
+      "document_schema": {
+        "namaLengkap": "string",
+        "gender": "string",
+        "tempatLahir": "string",
+        "tanggalLahir": "string",
+        "kodeGuruBinaan": "string",
+        "jilid": "string",
+        "guruKodeBTQ": "string"
+      }
+    },
+    {
+      "collection_id": "jadwalShift",
+      "description": "Store shift schedule data",
+      "document_schema": {
+        "namaShift": "string",
+        "hari": ["string"],
+        "jam": "string"
+      }
+    },
+    {
+      "collection_id": "hariLibur",
+      "description": "Store holiday data",
+      "document_schema": {
+        "bulan": "string",
+        "tanggal": "string",
+        "shiftId": "string",
+        "kelasId": "string",
+        "keterangan": "string"
+      }
+    },
+    {
+      "collection_id": "kelas",
+      "description": "Store class structure data",
+      "document_schema": {
+        "kelas": "number",
+        "subKelas": "string",
+        "isKelasAkhir": "boolean",
+        "shiftId": "string"
+      }
+    },
+    {
+      "collection_id": "capaianHarian",
+      "description": "Store daily student achievements and attendance",
+      "document_schema": {
+        "siswaId": "string",
+        "tanggal": "string",
+        "kehadiran": "string",
+        "capaian": {
+          "hal": "string",
+          "surat": "string",
+          "ayat": "string",
+          "juz": "string",
+          "murojaahGhorib": "string",
+          "capaianGhorib": "string",
+          "capaianTajwid": "string",
+          "ket": "string"
+        },
+        "keterangan": "string",
+        "shiftId": "string",
+        "guruKode": "string"
+      }
+    },
+    {
+      "collection_id": "pindahSementara",
+      "description": "Store temporary teacher assignments",
+      "document_schema": {
+        "siswaId": "string",
+        "guruLamaKode": "string",
+        "guruBaruKode": "string",
+        "timestamp": "number",
+        "shiftId": "string"
+      }
+    },
+    {
+      "collection_id": "pengajuanTes",
+      "description": "Store submissions for tests",
+      "document_schema": {
+        "siswaId": "string",
+        "jilidAsal": "string",
+        "jilidTujuan": "string",
+        "tanggalPengajuan": "string",
+        "status": "string",
+        "diujiOleh": "string",
+        "tanggalUji": "string",
+        "catatan": "string"
+      }
+    },
+    {
+      "collection_id": "stokJilid",
+      "description": "Store inventory for Jilid books",
+      "document_schema": {
+        "jilid": "string",
+        "stok": "number",
+        "harga": "number"
+      }
+    },
+    {
+      "collection_id": "transaksiKeuangan",
+      "description": "Store financial transaction records",
+      "document_schema": {
+        "siswaId": "string",
+        "namaSiswaManual": "string",
+        "jenis": "string",
+        "jumlah": "number",
+        "tanggal": "string",
+        "status": "string",
+        "keterangan": "string"
+      }
+    }
+  ]
+}

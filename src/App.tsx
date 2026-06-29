@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { AppProvider, useApp } from './context/AppContext';
+import React, { useState, useEffect } from 'react';
+import { AppProvider, useApp, defaultSiswa, defaultGuruBTQ, defaultGuruBinaan, defaultJadwalShift, defaultHariLibur, defaultKelas, defaultStokJilid, defaultPengajuanTes, defaultTransaksi, generateHistoricalLogs } from './context/AppContext';
 import DashboardData from './components/DashboardData';
 import PJView from './components/PJView';
 import AdminView from './components/AdminView';
@@ -7,6 +7,7 @@ import BendaharaView from './components/BendaharaView';
 import GuruView from './components/GuruView';
 import ArsipView from './components/ArsipView';
 import LoginView from './components/LoginView';
+import { initializeFirestoreWithDefaults } from './lib/initDb';
 
 import { 
   Menu, X, BookOpen, Layers, Award, Landmark, 
@@ -18,6 +19,21 @@ import {
 type SidebarTab = 'dashboard' | 'pj' | 'admin' | 'bendahara' | 'guru' | 'arsip';
 
 function MainAppContent() {
+  useEffect(() => {
+    initializeFirestoreWithDefaults(
+      defaultSiswa,
+      defaultGuruBTQ,
+      defaultGuruBinaan,
+      defaultJadwalShift,
+      defaultHariLibur,
+      defaultKelas,
+      defaultStokJilid,
+      defaultPengajuanTes,
+      defaultTransaksi,
+      generateHistoricalLogs
+    );
+  }, []);
+
   const { resetToDefault, loggedInRoles, logout } = useApp();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<SidebarTab>('dashboard');

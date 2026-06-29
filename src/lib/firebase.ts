@@ -1,0 +1,16 @@
+import { initializeApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+
+const firebaseConfig = {
+  projectId: "scientific-amp-qxhgq",
+  appId: "1:876858142370:web:c429e0deda670a5d9db1fb",
+  apiKey: "AIzaSyA4-to6FJg75ggZ4EAG7_dFqqpY4lj1GqM",
+  authDomain: "scientific-amp-qxhgq.firebaseapp.com",
+  storageBucket: "scientific-amp-qxhgq.firebasestorage.app",
+  messagingSenderId: "876858142370",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app, "ai-studio-btqdigitalsmpmuh-d3c0faaf-ad6c-4112-9e89-8bdac73c89d1");
+
+export { app, db };
