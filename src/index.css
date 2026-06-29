@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-philosopher: "Philosopher", sans-serif;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-brand-primary: #114645;
+  --color-brand-accent: #115e5d;
+  --color-brand-gold: #d8be4c;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #f7fafc;
+  color: #1a202c;
+}
+
+.font-philosopher {
+  font-family: var(--font-philosopher);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #114645;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #115e5d;
+}
+

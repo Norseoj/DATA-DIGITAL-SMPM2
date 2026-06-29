@@ -1,0 +1,6 @@
+{
+  "name": "BTQ Digital SMP Muhammadiyah 2 Cirebon",
+  "description": "Sistem Informasi Digital & Manajemen Kelas Qiroati di SMP Muhammadiyah 2 Cirebon",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
