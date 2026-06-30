@@ -43,6 +43,7 @@ export interface GuruBTQ {
   tempatLahir: string;
   tanggalLahir: string;
   kodeGuru: string; // e.g. "G01", "G02" (unique identifier)
+  password?: string;
 }
 
 export interface GuruBinaan {
@@ -122,6 +123,13 @@ export interface PengajuanTes {
   tanggalUji?: string;
   catatan?: string;
   keteranganTasmi?: string;
+  // Untuk EBTAQ
+  ebtaqLembaga?: 'Lulus' | 'Lulus Bersyarat' | 'Tidak Lulus' | '';
+  ebtaqKorcam?: 'Lulus' | 'Lulus Bersyarat' | 'Tidak Lulus' | '';
+  ebtaqKorcab?: 'Lulus' | 'Lulus Bersyarat' | 'Tidak Lulus' | '';
+  catatanLembaga?: string;
+  catatanKorcam?: string;
+  catatanKorcab?: string;
 }
 
 export interface StokJilid {

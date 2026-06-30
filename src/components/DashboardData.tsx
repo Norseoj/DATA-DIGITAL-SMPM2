@@ -94,10 +94,11 @@ export default function DashboardData() {
                       <span className="text-2xl font-bold text-gray-800">{jilidSiswa.length} <span className="text-xs text-gray-500 font-normal">Siswa</span></span>
                     </div>
                     <div className="space-y-2 border-t border-gray-50 pt-3">
-                      {jilidSiswa.map(siswa => (
-                        <div key={siswa.id} className="flex justify-between items-center text-sm">
-                          <span className="font-medium text-gray-700 truncate max-w-[150px]">{siswa.namaLengkap}</span>
-                          <span className="text-xs text-gray-500">{getKelasName(siswa.kelasId)} • {siswa.guruKode}</span>
+                      {jilidSiswa.map((siswa, idx) => (
+                        <div key={siswa.id} className="flex justify-between items-center text-sm gap-2">
+                          <span className="text-gray-400 font-mono text-xs w-4">{idx + 1}.</span>
+                          <span className="font-medium text-gray-700 truncate max-w-[130px] flex-grow">{siswa.namaLengkap}</span>
+                          <span className="text-xs text-gray-500 text-right">{getKelasName(siswa.kelasId)} • {siswa.guruKode}</span>
                         </div>
                       ))}
                     </div>
@@ -131,10 +132,11 @@ export default function DashboardData() {
                     {kelasSiswa.length === 0 ? (
                       <p className="text-xs text-gray-400 italic">Belum ada siswa di kelas ini.</p>
                     ) : (
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {kelasSiswa.map(siswa => (
-                          <div key={siswa.id} className="flex justify-between items-center text-xs">
-                            <span className="font-medium text-gray-700 truncate max-w-[140px]">{siswa.namaLengkap}</span>
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                        {kelasSiswa.map((siswa, idx) => (
+                          <div key={siswa.id} className="flex justify-between items-center text-xs gap-1.5">
+                            <span className="text-gray-400 font-mono w-4">{idx + 1}.</span>
+                            <span className="font-medium text-gray-700 truncate max-w-[120px] flex-grow">{siswa.namaLengkap}</span>
                             <span className="px-2 py-0.5 bg-brand-gold/10 text-brand-primary text-[10px] rounded font-bold">{siswa.jilid}</span>
                             <span className="text-[10px] text-gray-500">{siswa.guruKode}</span>
                           </div>
@@ -206,9 +208,10 @@ export default function DashboardData() {
                           </div>
                         </div>
                         <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-                          {guruSiswa.map(siswa => (
-                            <div key={siswa.id} className="flex justify-between items-center text-xs py-1 hover:bg-gray-50 rounded px-1">
-                              <span className="font-medium text-gray-700 truncate max-w-[150px]">{siswa.namaLengkap}</span>
+                          {guruSiswa.map((siswa, idx) => (
+                            <div key={siswa.id} className="flex justify-between items-center text-xs py-1 hover:bg-gray-50 rounded px-1 gap-2">
+                              <span className="text-gray-400 font-mono w-4">{idx + 1}.</span>
+                              <span className="font-medium text-gray-700 truncate max-w-[130px] flex-grow">{siswa.namaLengkap}</span>
                               <div className="flex gap-4 items-center">
                                 <span className="text-gray-500 text-[11px]">{getKelasName(siswa.kelasId)}</span>
                                 <span className="px-2 py-0.5 bg-brand-gold text-brand-primary font-bold text-[10px] rounded shadow-2xs">{siswa.jilid}</span>
@@ -513,10 +516,24 @@ export default function DashboardData() {
               </div>
 
               {/* Table */}
+              <div className="flex justify-between items-end mb-2 mt-4">
+                <div className="text-xs font-semibold text-gray-500">
+                  Total Data: {filtered.length} Siswa
+                </div>
+                <div className="flex gap-2">
+                  <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                    Unduh Excel
+                  </button>
+                  <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                    Unduh PDF
+                  </button>
+                </div>
+              </div>
               <div className="overflow-x-auto rounded-xl border border-gray-100">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-gray-100 border-b border-gray-200 text-gray-600 uppercase font-bold tracking-wider">
+                      <th className="p-3 font-semibold text-center w-12">No</th>
                       <th className="p-3 font-semibold">Nama</th>
                       <th className="p-3 font-semibold">Kelas</th>
                       <th className="p-3 font-semibold">Jilid</th>
@@ -526,13 +543,14 @@ export default function DashboardData() {
                   <tbody className="divide-y divide-gray-100">
                     {filtered.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="p-4 text-center text-gray-400 italic">
+                        <td colSpan={5} className="p-4 text-center text-gray-400 italic">
                           Tidak ada data siswa yang cocok dengan filter.
                         </td>
                       </tr>
                     ) : (
-                      filtered.map(siswa => (
+                      filtered.map((siswa, idx) => (
                         <tr key={siswa.id} className="hover:bg-gray-50/50">
+                          <td className="p-3 text-center text-gray-400 font-mono">{idx + 1}</td>
                           <td className="p-3 font-semibold text-gray-800">{siswa.namaLengkap}</td>
                           <td className="p-3 text-brand-accent font-medium">{getKelasName(siswa.kelasId)}</td>
                           <td className="p-3">
@@ -636,12 +654,21 @@ export default function DashboardData() {
 
     return (
       <div className="space-y-6">
-        <div className="bg-white p-5 rounded-xl shadow-xs border border-gray-100 flex items-center justify-between">
+        <div className="bg-white p-5 rounded-xl shadow-xs border border-gray-100 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-brand-primary">Laporan Data Khatimin Al-Qur'an</h3>
-            <p className="text-sm text-gray-500">Daftar siswa yang telah menyelesaikan khatam Al-Qur'an 30 Juz & Tahfidz.</p>
+            <h3 className="text-lg font-semibold text-brand-primary flex items-center gap-2">
+              Laporan Data Khatimin Al-Qur'an <Award size={20} className="text-brand-gold" />
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">Daftar siswa yang telah menyelesaikan khatam Al-Qur'an 30 Juz & Tahfidz.</p>
           </div>
-          <Award size={36} className="text-brand-gold" />
+          <div className="flex gap-2">
+            <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
+              Unduh Excel
+            </button>
+            <button className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">
+              Unduh PDF
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -651,7 +678,7 @@ export default function DashboardData() {
               <p className="text-sm font-medium">Belum ada siswa yang tercatat khatam Al-Qur'an.</p>
             </div>
           ) : (
-            khatimList.map(siswa => (
+            khatimList.map((siswa, idx) => (
               <div key={siswa.id} className="bg-white p-5 rounded-xl shadow-xs border border-brand-gold/30 hover:shadow-md transition relative overflow-hidden flex flex-col justify-between">
                 {/* Gold ribbon */}
                 <div className="absolute top-0 right-0 w-16 h-16 pointer-events-none overflow-hidden">
@@ -661,7 +688,10 @@ export default function DashboardData() {
                 </div>
 
                 <div>
-                  <h4 className="font-extrabold text-gray-800 text-base">{siswa.namaLengkap}</h4>
+                  <div className="flex items-start gap-2 mb-1">
+                    <span className="bg-brand-primary/10 text-brand-primary font-mono text-[10px] px-1.5 py-0.5 rounded font-bold">{idx + 1}</span>
+                    <h4 className="font-extrabold text-gray-800 text-base flex-grow">{siswa.namaLengkap}</h4>
+                  </div>
                   <p className="text-xs text-gray-400 mt-1">{getKelasName(siswa.kelasId)} • {siswa.gender === 'LK' ? 'LK' : 'PR'}</p>
                   
                   <div className="mt-4 space-y-2 border-t border-gray-50 pt-3 text-xs">

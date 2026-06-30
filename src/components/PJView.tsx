@@ -6,7 +6,7 @@ import { Users, CheckCircle, XCircle, RefreshCw, Archive, BookOpen, Layers, Sett
 export default function PJView() {
   const {
     siswaList, guruBTQList, guruBinaanList, pengajuanTesList, stokJilidList, pindahSementaraList,
-    updateSiswa, verifikasiTes, updateStokJilid, addPindahSementara, clearPindahSementara, kelasList
+    updateSiswa, verifikasiTes, updatePengajuanTes, updateStokJilid, addPindahSementara, clearPindahSementara, kelasList
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'kelompok' | 'verifikasi' | 'stok' | 'binaan'>('kelompok');
@@ -303,81 +303,248 @@ export default function PJView() {
         </div>
       )}
 
-      {/* Tab 2: Verifikasi Tes Jilid */}
+      {/* Tab 2: Verifikasi Tes */}
       {activeTab === 'verifikasi' && (
         <div className="space-y-6">
           <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-xs">
-            <h3 className="font-bold text-gray-800 text-base mb-1">Verifikasi Ajuan Tes Kenaikan Jilid</h3>
-            <p className="text-xs text-gray-400">Verifikasi ajuan tes munaqosah santri dari asatidz. Menyetujui ajuan akan otomatis meluluskan dan menaikkan jilid siswa.</p>
+            <h3 className="font-bold text-gray-800 text-base mb-1">Verifikasi Ajuan Tes Kenaikan Jilid, Tasmi', dan EBTAQ</h3>
+            <p className="text-xs text-gray-400">Verifikasi ajuan tes dari asatidz.</p>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-xs overflow-hidden">
+          {/* Kenaikan Jilid */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-xs overflow-hidden mb-6">
+            <h4 className="font-bold text-brand-primary bg-brand-primary/10 p-3 text-sm">Tes Kenaikan Jilid</h4>
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider">
-                  <th className="p-4">Siswa</th>
-                  <th className="p-4">Jilid Asal</th>
-                  <th className="p-4">Rencana Jilid Baru</th>
+                  <th className="p-4 w-12 text-center">No</th>
+                  <th className="p-4">Nama</th>
+                  <th className="p-4">Jilid</th>
+                  <th className="p-4">Naik Ke</th>
                   <th className="p-4">Tanggal Pengajuan</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-center">Verifikasi Tindakan PJ</th>
+                  <th className="p-4">Keterangan</th>
+                  <th className="p-4">Catatan</th>
+                  <th className="p-4">Pindah Guru</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {pengajuanTesList.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-gray-400 italic">Belum ada pengajuan tes munaqosah kenaikan jilid dari guru.</td>
-                  </tr>
+                {pengajuanTesList.filter(p => p.jilidAsal !== 'Finishing' && p.jilidAsal !== 'Tahfidz').length === 0 ? (
+                  <tr><td colSpan={8} className="p-8 text-center text-gray-400 italic">Belum ada pengajuan.</td></tr>
                 ) : (
-                  pengajuanTesList.map(tes => {
+                  pengajuanTesList.filter(p => p.jilidAsal !== 'Finishing' && p.jilidAsal !== 'Tahfidz').map((tes, index) => {
                     const sis = siswaList.find(s => s.id === tes.siswaId);
                     return (
                       <tr key={tes.id} className="hover:bg-gray-50/50">
-                        <td className="p-4">
-                          <div className="font-bold text-gray-800">{sis?.namaLengkap || 'Siswa tidak ditemukan'}</div>
-                          <span className="text-[10px] text-gray-400">ID: {tes.siswaId}</span>
-                        </td>
-                        <td className="p-4">
-                          <span className="px-2 py-0.5 bg-red-50 text-red-700 font-bold rounded">{tes.jilidAsal}</span>
-                        </td>
-                        <td className="p-4">
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded">{tes.jilidTujuan}</span>
-                        </td>
+                        <td className="p-4 text-center text-gray-400 font-mono font-bold">{index + 1}</td>
+                        <td className="p-4 font-bold text-gray-800">{sis?.namaLengkap || 'Siswa tidak ditemukan'}</td>
+                        <td className="p-4"><span className="px-2 py-0.5 bg-red-50 text-red-700 font-bold rounded">{tes.jilidAsal}</span></td>
+                        <td className="p-4"><span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold rounded">{tes.jilidTujuan}</span></td>
                         <td className="p-4 font-mono">{tes.tanggalPengajuan}</td>
                         <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full font-bold text-[10px] uppercase tracking-wider ${
-                            tes.status === 'Pending' 
-                              ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                              : tes.status === 'Disetujui'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-red-50 text-red-700 border border-red-200'
-                          }`}>
-                            {tes.status}
-                          </span>
-                        </td>
-                        <td className="p-4 text-center">
                           {tes.status === 'Pending' ? (
-                            <div className="flex gap-2 justify-center">
-                              <button
-                                onClick={() => verifikasiTes(tes.id, 'Disetujui', 'PJ - Ustadz Sobari', 'Lancar, makhraj baik.')}
-                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded flex items-center gap-1 transition"
-                              >
-                                <CheckCircle size={13} /> Setujui & Naik Jilid
-                              </button>
-                              <button
-                                onClick={() => verifikasiTes(tes.id, 'Ditolak', 'PJ - Ustadz Sobari', 'Perlu munaqosah ulang makhraj.')}
-                                className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded flex items-center gap-1 transition"
-                              >
-                                <XCircle size={13} /> Tolak
-                              </button>
-                            </div>
+                            <select 
+                              value=""
+                              onChange={(e) => verifikasiTes(tes.id, e.target.value as 'Disetujui' | 'Ditolak', 'PJ', tes.catatan || '')}
+                              className="bg-gray-50 border border-gray-200 rounded p-1 text-[10px] w-full outline-none focus:border-brand-primary"
+                            >
+                              <option value="">--Pilih--</option>
+                              <option value="Disetujui">Lulus</option>
+                              <option value="Ditolak">Tidak Lulus</option>
+                            </select>
                           ) : (
-                            <div className="text-[11px] text-gray-500">
-                              Diverifikasi oleh: <b>{tes.diujiOleh}</b> <br />
-                              Catatan: <span className="italic">"{tes.catatan}"</span>
-                            </div>
+                            <span className={`font-bold ${tes.status === 'Disetujui' ? 'text-emerald-600' : 'text-red-600'}`}>{tes.status === 'Disetujui' ? 'Lulus' : 'Tidak Lulus'}</span>
                           )}
                         </td>
+                        <td className="p-4">
+                          <input
+                            type="text"
+                            value={tes.catatan || ''}
+                            onChange={(e) => updatePengajuanTes(tes.id, { catatan: e.target.value })}
+                            placeholder="Catatan..."
+                            disabled={tes.status !== 'Pending'}
+                            className="w-full bg-gray-50 border border-gray-200 rounded p-1 text-[10px] outline-none focus:border-brand-primary focus:bg-white disabled:opacity-50"
+                          />
+                        </td>
+                        <td className="p-4">
+                          {tes.status === 'Disetujui' && (
+                             <button
+                               onClick={() => {
+                                 setSelectedSiswaId(tes.siswaId);
+                                 setTargetGuruKode(sis?.guruKode || '');
+                                 setActiveTab('kelompok');
+                               }}
+                               className="bg-brand-primary text-white font-bold px-2 py-1 rounded text-[10px] hover:bg-brand-accent transition"
+                             >
+                               Pindah Guru
+                             </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Tes Tasmi' */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-xs overflow-hidden mb-6">
+            <h4 className="font-bold text-brand-primary bg-brand-primary/10 p-3 text-sm">Tes Tasmi'</h4>
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider">
+                  <th className="p-4 w-12 text-center">No</th>
+                  <th className="p-4">Nama</th>
+                  <th className="p-4">Juz</th>
+                  <th className="p-4">Keterangan</th>
+                  <th className="p-4">Catatan</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {pengajuanTesList.filter(p => p.jilidAsal === 'Tahfidz').length === 0 ? (
+                  <tr><td colSpan={5} className="p-8 text-center text-gray-400 italic">Belum ada pengajuan.</td></tr>
+                ) : (
+                  pengajuanTesList.filter(p => p.jilidAsal === 'Tahfidz').map((tes, index) => {
+                    const sis = siswaList.find(s => s.id === tes.siswaId);
+                    return (
+                      <tr key={tes.id} className="hover:bg-gray-50/50">
+                        <td className="p-4 text-center text-gray-400 font-mono font-bold">{index + 1}</td>
+                        <td className="p-4 font-bold text-gray-800">{sis?.namaLengkap || 'Siswa tidak ditemukan'}</td>
+                        <td className="p-4 text-brand-primary font-bold">{tes.keteranganTasmi || '-'}</td>
+                        <td className="p-4">
+                          {tes.status === 'Pending' ? (
+                            <select 
+                              value=""
+                              onChange={(e) => updatePengajuanTes(tes.id, { status: e.target.value as 'Disetujui' | 'Ditolak' })}
+                              className="bg-gray-50 border border-gray-200 rounded p-1 text-[10px] w-full outline-none focus:border-brand-primary"
+                            >
+                              <option value="">--Pilih--</option>
+                              <option value="Disetujui">Lulus</option>
+                              <option value="Ditolak">Tidak Lulus</option>
+                            </select>
+                          ) : (
+                            <span className={`font-bold ${tes.status === 'Disetujui' ? 'text-emerald-600' : 'text-red-600'}`}>{tes.status === 'Disetujui' ? 'Lulus' : 'Tidak Lulus'}</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <input
+                            type="text"
+                            value={tes.catatan || ''}
+                            onChange={(e) => updatePengajuanTes(tes.id, { catatan: e.target.value })}
+                            placeholder="Catatan..."
+                            disabled={tes.status !== 'Pending'}
+                            className="w-full bg-gray-50 border border-gray-200 rounded p-1 text-[10px] outline-none focus:border-brand-primary focus:bg-white disabled:opacity-50"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Tes EBTAQ */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-xs overflow-hidden mb-6">
+            <h4 className="font-bold text-brand-primary bg-brand-primary/10 p-3 text-sm">Tes EBTAQ</h4>
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider">
+                  <th className="p-4 w-12 text-center" rowSpan={2}>No</th>
+                  <th className="p-4" rowSpan={2}>Nama</th>
+                  <th className="p-4 text-center border-b border-gray-100 border-l" colSpan={2}>Lembaga</th>
+                  <th className="p-4 text-center border-b border-gray-100 border-l" colSpan={2}>Korcam</th>
+                  <th className="p-4 text-center border-b border-gray-100 border-l" colSpan={2}>Korcab</th>
+                </tr>
+                <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider text-[10px]">
+                  <th className="p-2 text-center border-l border-gray-100">Ket</th>
+                  <th className="p-2 text-center">Catatan</th>
+                  <th className="p-2 text-center border-l border-gray-100">Ket</th>
+                  <th className="p-2 text-center">Catatan</th>
+                  <th className="p-2 text-center border-l border-gray-100">Ket</th>
+                  <th className="p-2 text-center">Catatan</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {pengajuanTesList.filter(p => p.jilidAsal === 'Finishing').length === 0 ? (
+                  <tr><td colSpan={8} className="p-8 text-center text-gray-400 italic">Belum ada pengajuan.</td></tr>
+                ) : (
+                  pengajuanTesList.filter(p => p.jilidAsal === 'Finishing').map((tes, index) => {
+                    const sis = siswaList.find(s => s.id === tes.siswaId);
+                    
+                    const EbtaqStage = ({ stage, valField, catField }: { 
+                      stage: 'Lembaga' | 'Korcam' | 'Korcab',
+                      valField: 'ebtaqLembaga' | 'ebtaqKorcam' | 'ebtaqKorcab',
+                      catField: 'catatanLembaga' | 'catatanKorcam' | 'catatanKorcab'
+                    }) => {
+                      const isDisabled = tes.status !== 'Pending';
+                      
+                      if (stage === 'Korcam' && !(tes.ebtaqLembaga === 'Lulus' || tes.ebtaqLembaga === 'Lulus Bersyarat')) {
+                        return (
+                          <>
+                            <td className="p-2 border-l border-gray-100 text-center"><span className="text-gray-300 italic">-</span></td>
+                            <td className="p-2"><span className="text-gray-300 italic">-</span></td>
+                          </>
+                        );
+                      }
+                      
+                      if (stage === 'Korcab' && !(tes.ebtaqKorcam === 'Lulus' || tes.ebtaqKorcam === 'Lulus Bersyarat')) {
+                        return (
+                          <>
+                            <td className="p-2 border-l border-gray-100 text-center"><span className="text-gray-300 italic">-</span></td>
+                            <td className="p-2"><span className="text-gray-300 italic">-</span></td>
+                          </>
+                        );
+                      }
+
+                      return (
+                        <>
+                          <td className="p-2 border-l border-gray-100">
+                            <select 
+                              value={tes[valField] || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const updates: Partial<PengajuanTes> = { [valField]: val };
+                                
+                                if (stage === 'Korcab' && (val === 'Lulus' || val === 'Lulus Bersyarat')) {
+                                   updates.status = 'Disetujui';
+                                   updateSiswa(tes.siswaId, { jilid: 'Tahfidz' }); 
+                                } else if (val === 'Tidak Lulus') {
+                                   updates.status = 'Ditolak';
+                                }
+                                
+                                updatePengajuanTes(tes.id, updates);
+                              }}
+                              disabled={isDisabled}
+                              className="bg-gray-50 border border-gray-200 rounded p-1 text-[10px] w-full disabled:opacity-50 outline-none focus:border-brand-primary"
+                            >
+                              <option value="">--Pilih--</option>
+                              <option value="Lulus">Lulus</option>
+                              <option value="Lulus Bersyarat">Lulus Bersyarat</option>
+                              <option value="Tidak Lulus">Tidak Lulus</option>
+                            </select>
+                          </td>
+                          <td className="p-2">
+                            <input
+                              type="text"
+                              value={tes[catField] || ''}
+                              onChange={(e) => updatePengajuanTes(tes.id, { [catField]: e.target.value })}
+                              placeholder="Catatan..."
+                              disabled={isDisabled}
+                              className="w-full bg-gray-50 border border-gray-200 rounded p-1 text-[10px] outline-none focus:border-brand-primary focus:bg-white disabled:opacity-50"
+                            />
+                          </td>
+                        </>
+                      );
+                    };
+
+                    return (
+                      <tr key={tes.id} className="hover:bg-gray-50/50">
+                        <td className="p-4 text-center text-gray-400 font-mono font-bold">{index + 1}</td>
+                        <td className="p-4 font-bold text-gray-800 whitespace-nowrap">{sis?.namaLengkap || 'Siswa tidak ditemukan'}</td>
+                        <EbtaqStage stage="Lembaga" valField="ebtaqLembaga" catField="catatanLembaga" />
+                        <EbtaqStage stage="Korcam" valField="ebtaqKorcam" catField="catatanKorcam" />
+                        <EbtaqStage stage="Korcab" valField="ebtaqKorcab" catField="catatanKorcab" />
                       </tr>
                     );
                   })

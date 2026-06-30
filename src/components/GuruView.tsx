@@ -98,7 +98,7 @@ export const validateQuranProgress = (juzStr: string | undefined, surahNama: str
 export default function GuruView() {
   const {
     siswaList, guruBTQList, guruBinaanList, jadwalShiftList, hariLiburList, capaianHarianList,
-    pindahSementaraList, saveKehadiranAndCapaian, ajukanTes, activeUserKode, setActiveUserKode, kelasList
+    pindahSementaraList, saveKehadiranAndCapaian, ajukanTes, activeUserKode, setActiveUserKode, kelasList, pengajuanTesList
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState<'input' | 'rekap'>('input');
@@ -320,18 +320,15 @@ export default function GuruView() {
             })}
           </select>
 
-          {/* Ayat Dropdown */}
-          <select
+          {/* Ayat Input */}
+          <input
+            type="number"
             value={currentVal.ayat || ''}
             onChange={(e) => handleCapaianChange(sId, jilid, 'ayat', e.target.value)}
             disabled={!currentVal.surat}
+            placeholder="Ayat..."
             className="bg-white border border-gray-300 rounded p-1 text-[11px] outline-none w-full disabled:opacity-50 disabled:bg-gray-50 font-sans text-gray-700 font-medium"
-          >
-            <option value="">Ayat...</option>
-            {ayats.map(num => (
-              <option key={num} value={num.toString()}>{num}</option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* Info Message */}
@@ -662,6 +659,19 @@ export default function GuruView() {
   };
 
   const renderAjukanTesButton = (siswa: Siswa) => {
+    const hasPending = pengajuanTesList.some(p => p.siswaId === siswa.id && p.status === 'Pending');
+
+    if (hasPending) {
+      return (
+        <button
+          disabled
+          className="bg-gray-200 text-gray-500 font-bold px-2 py-1 rounded text-[10px] shadow-sm whitespace-nowrap font-sans cursor-not-allowed"
+        >
+          Menunggu Verifikasi
+        </button>
+      );
+    }
+
     let buttonLabel = "Ajukan Munaqosah";
     let target = nextTargetJilid(siswa.jilid);
 

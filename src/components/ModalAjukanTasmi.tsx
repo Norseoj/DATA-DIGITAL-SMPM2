@@ -16,14 +16,27 @@ export default function ModalAjukanTasmi({ siswa, onClose, onSubmit }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (jumlahJuz === '' || juzStart === '' || juzEnd === '') {
-      alert('Mohon lengkapi data jumlah juz dan rentang juz.');
+    if (jumlahJuz === '') {
+      alert('Mohon lengkapi data jumlah juz.');
       return;
     }
     
-    let ket = `${jumlahJuz} Juz (Juz ${juzStart} - ${juzEnd})`;
-    if (jumlahJuz === 1 && opsiTambahan) {
-      ket += ` [${opsiTambahan}]`;
+    let ket = '';
+    if (jumlahJuz === 1) {
+      if (juzStart === '') {
+        alert('Mohon lengkapi No Juz.');
+        return;
+      }
+      ket = `1 Juz (Juz ${juzStart})`;
+      if (opsiTambahan) {
+        ket += ` [${opsiTambahan}]`;
+      }
+    } else {
+      if (juzStart === '' || juzEnd === '') {
+        alert('Mohon lengkapi rentang juz.');
+        return;
+      }
+      ket = `${jumlahJuz} Juz (Juz ${juzStart} - ${juzEnd})`;
     }
     
     onSubmit(ket);
@@ -52,9 +65,9 @@ export default function ModalAjukanTasmi({ siswa, onClose, onSubmit }: Props) {
             />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
+          {jumlahJuz === 1 ? (
             <div>
-              <label className="block text-xs font-bold mb-1">Mulai Juz</label>
+              <label className="block text-xs font-bold mb-1">No Juz</label>
               <input 
                 type="number" 
                 min="1" max="30"
@@ -64,18 +77,32 @@ export default function ModalAjukanTasmi({ siswa, onClose, onSubmit }: Props) {
                 required
               />
             </div>
-            <div>
-              <label className="block text-xs font-bold mb-1">Sampai Juz</label>
-              <input 
-                type="number" 
-                min="1" max="30"
-                value={juzEnd} 
-                onChange={e => setJuzEnd(e.target.value ? Number(e.target.value) : '')} 
-                className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 outline-none focus:border-brand-primary focus:bg-white"
-                required
-              />
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold mb-1">Mulai Juz</label>
+                <input 
+                  type="number" 
+                  min="1" max="30"
+                  value={juzStart} 
+                  onChange={e => setJuzStart(e.target.value ? Number(e.target.value) : '')} 
+                  className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 outline-none focus:border-brand-primary focus:bg-white"
+                  required={jumlahJuz !== '' && jumlahJuz > 1}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold mb-1">Sampai Juz</label>
+                <input 
+                  type="number" 
+                  min="1" max="30"
+                  value={juzEnd} 
+                  onChange={e => setJuzEnd(e.target.value ? Number(e.target.value) : '')} 
+                  className="w-full bg-gray-50 border border-gray-300 rounded px-3 py-2 outline-none focus:border-brand-primary focus:bg-white"
+                  required={jumlahJuz !== '' && jumlahJuz > 1}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {jumlahJuz === 1 && (
             <div>

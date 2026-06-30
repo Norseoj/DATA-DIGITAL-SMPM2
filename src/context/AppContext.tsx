@@ -40,6 +40,8 @@ interface AppContextProps {
 
   userCredentialsList: UserCredentials[];
   loggedInRoles: Record<'pj' | 'admin' | 'bendahara' | 'guru', boolean>;
+  promotionPassword?: string;
+  updatePromotionPassword: (pwd: string) => void;
   updateCredentials: (role: 'pj' | 'admin' | 'bendahara' | 'guru', username: string, password?: string) => void;
   login: (role: 'pj' | 'admin' | 'bendahara' | 'guru', username: string, password?: string) => boolean;
   logout: (role: 'pj' | 'admin' | 'bendahara' | 'guru') => void;
@@ -78,6 +80,7 @@ interface AppContextProps {
 
   ajukanTes: (siswaId: string, jilidAsal: JilidType, jilidTujuan: JilidType, keteranganTasmi?: string) => void;
   verifikasiTes: (id: string, status: 'Disetujui' | 'Ditolak', diujiOleh: string, catatan: string) => void;
+  updatePengajuanTes: (id: string, updates: Partial<PengajuanTes>) => void;
 
   updateStokJilid: (jilid: JilidType, jumlah: number, isSet?: boolean) => void;
   
@@ -343,6 +346,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     bendahara: false,
     guru: false
   });
+  const [promotionPassword, setPromotionPasswordState] = useState<string>('admin123'); // Default password
 
   const [siswaList, setSiswaList] = useState<Siswa[]>([]);
   const [guruBTQList, setGuruBTQList] = useState<GuruBTQ[]>([]);
@@ -423,6 +427,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else if (doc.id === 'credentials') {
           const data = doc.data();
           if (data.list) setUserCredentialsList(data.list);
+        } else if (doc.id === 'promotion') {
+          const data = doc.data();
+          if (data.password) setPromotionPasswordState(data.password);
         }
       });
     }, (error) => console.error("Error fetching settings:", error));
@@ -764,9 +771,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       jilidAsal,
       jilidTujuan,
       tanggalPengajuan: new Date().toISOString().split('T')[0],
-      status: 'Pending',
-      keteranganTasmi
+      status: 'Pending'
     };
+    if (keteranganTasmi) {
+      newRequest.keteranganTasmi = keteranganTasmi;
+    }
     savePengajuanTesList([...pengajuanTesList, newRequest]);
     syncToFirestore('pengajuanTes', newRequest.id, newRequest);
   };
@@ -789,6 +798,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       savePengajuanTesList(pengajuanTesList.map(p => p.id === id ? testRes : p));
       syncToFirestore('pengajuanTes', id, testRes);
+    }
+  };
+
+  const updatePengajuanTes = (id: string, updates: Partial<PengajuanTes>) => {
+    const existing = pengajuanTesList.find(p => p.id === id);
+    if (existing) {
+      const updated = { ...existing, ...updates };
+      savePengajuanTesList(pengajuanTesList.map(p => p.id === id ? updated : p));
+      syncToFirestore('pengajuanTes', id, updated);
     }
   };
 
@@ -853,6 +871,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deleteFromFirestore('transaksiKeuangan', id);
   };
 
+  const updatePromotionPassword = (pwd: string) => {
+    setPromotionPasswordState(pwd);
+    syncToFirestore('settings', 'promotion', { password: pwd });
+  };
+
   const updateCredentials = (role: 'pj' | 'admin' | 'bendahara' | 'guru', username: string, password?: string) => {
     const updated = userCredentialsList.map(c => {
       if (c.role === role) {
@@ -865,6 +888,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const login = (role: 'pj' | 'admin' | 'bendahara' | 'guru', username: string, password?: string): boolean => {
+    if (role === 'guru') {
+      const guru = guruBTQList.find(g => g.kodeGuru === username);
+      if (guru && guru.password === password) {
+        const updatedLoggedIn = { ...loggedInRoles, [role]: true };
+        setLoggedInRoles(updatedLoggedIn);
+        // Also set activeUserKode for guru
+        setActiveUserKodeState(guru.kodeGuru);
+        syncToFirestore('settings', 'auth', { activeRole, activeUserKode: guru.kodeGuru, loggedInRoles: updatedLoggedIn });
+        return true;
+      }
+      return false;
+    }
+
     const account = userCredentialsList.find(c => c.role === role);
     if (account && account.username === username && account.password === password) {
       const updatedLoggedIn = { ...loggedInRoles, [role]: true };
@@ -987,6 +1023,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         
         userCredentialsList,
         loggedInRoles,
+        promotionPassword,
+        updatePromotionPassword,
         updateCredentials,
         login,
         logout,
@@ -1016,6 +1054,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearPindahSementara,
         ajukanTes,
         verifikasiTes,
+        updatePengajuanTes,
         updateStokJilid,
         addTransaksi,
         updateTransaksiStatus,

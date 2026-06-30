@@ -142,6 +142,8 @@ export default function AdminView() {
   // Search & Suggestion States
   const [siswaSearchQuery, setSiswaSearchQuery] = useState('');
   const [showSiswaSuggestions, setShowSiswaSuggestions] = useState(false);
+  const [siswaGroupBy, setSiswaGroupBy] = useState<'none' | 'jilid' | 'kelas' | 'guru'>('none');
+  const [promotionPassword, setPromotionPassword] = useState('');
 
   // Input States
   // 1. Siswa
@@ -169,6 +171,7 @@ export default function AdminView() {
   const [gTempatLahir, setGTempatLahir] = useState('');
   const [gTanggalLahir, setGTanggalLahir] = useState('');
   const [gKode, setGKode] = useState('');
+  const [gPassword, setGPassword] = useState('');
 
   // 3. Guru Binaan
   const [gbNama, setGbNama] = useState('');
@@ -215,12 +218,14 @@ export default function AdminView() {
     setGTempatLahir(g.tempatLahir === '-' ? '' : g.tempatLahir);
     setGTanggalLahir(g.tanggalLahir === '-' ? '' : g.tanggalLahir);
     setGKode(g.kodeGuru);
+    setGPassword(g.password || '');
   };
 
   const handleCancelEditGuruBTQ = () => {
     setEditingGuruBTQId(null);
     setGNama('');
     setGKode('');
+    setGPassword('');
     setGTempatLahir('');
     setGTanggalLahir('');
   };
@@ -327,7 +332,8 @@ export default function AdminView() {
       gender: gGender,
       tempatLahir: gTempatLahir || '-',
       tanggalLahir: gTanggalLahir || '-',
-      kodeGuru: gKode.toUpperCase()
+      kodeGuru: gKode.toUpperCase(),
+      password: gPassword || '123456' // Default if empty
     };
 
     if (editingGuruBTQId) {
@@ -341,6 +347,7 @@ export default function AdminView() {
 
     setGNama('');
     setGKode('');
+    setGPassword('');
     setGTempatLahir('');
     setGTanggalLahir('');
   };
@@ -385,13 +392,21 @@ export default function AdminView() {
 
   const handleAddJadwal = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!shiftNama || shiftHari.length === 0 || !shiftJam) {
+    const currentHari = shiftHari || [];
+    if (!shiftNama || currentHari.length === 0 || !shiftJam) {
       alert('Silakan lengkapi nama shift, checklist hari, dan jam.');
       return;
     }
+
+    const isDup = jadwalShiftList.some(s => s.id !== editingJadwalShiftId && s.namaShift.toLowerCase() === shiftNama.toLowerCase());
+    if (isDup) {
+      alert('Nama Shift sudah terdaftar!');
+      return;
+    }
+
     const payload = {
       namaShift: shiftNama,
-      hari: shiftHari,
+      hari: currentHari,
       jam: shiftJam
     };
 
@@ -411,7 +426,7 @@ export default function AdminView() {
   const startEditJadwalShift = (s: JadwalShift) => {
     setEditingJadwalShiftId(s.id);
     setShiftNama(s.namaShift);
-    setShiftHari(s.hari);
+    setShiftHari(s.hari || []);
     setShiftJam(s.jam);
     setShowJadwalForm(true);
   };
@@ -531,10 +546,11 @@ export default function AdminView() {
   const daysOfWeek = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
 
   const toggleDayCheck = (day: string) => {
-    if (shiftHari.includes(day)) {
-      setShiftHari(shiftHari.filter(d => d !== day));
+    const currentHari = shiftHari || [];
+    if (currentHari.includes(day)) {
+      setShiftHari(currentHari.filter(d => d !== day));
     } else {
-      setShiftHari([...shiftHari, day]);
+      setShiftHari([...currentHari, day]);
     }
   };
 
@@ -617,10 +633,26 @@ export default function AdminView() {
 
       {/* 1. SISWA VIEW */}
       {activeTab === 'siswa' && (() => {
-        const sortedAndFilteredSiswa = [...siswaList]
+        let sortedAndFilteredSiswa = [...siswaList]
           .filter(s => !s.isLulus)
           .filter(s => s.namaLengkap.toLowerCase().includes(siswaSearchQuery.toLowerCase()))
           .sort((a, b) => a.namaLengkap.localeCompare(b.namaLengkap));
+          
+        // Apply grouping if necessary
+        const groupedSiswa: Record<string, typeof sortedAndFilteredSiswa> = {};
+        if (siswaGroupBy === 'none') {
+          groupedSiswa['Semua Siswa'] = sortedAndFilteredSiswa;
+        } else {
+          sortedAndFilteredSiswa.forEach(s => {
+            let key = '';
+            if (siswaGroupBy === 'jilid') key = s.jilid;
+            else if (siswaGroupBy === 'kelas') key = kelasList.find(k => k.id === s.kelasId)?.nama || 'Tanpa Kelas';
+            else if (siswaGroupBy === 'guru') key = guruBTQList.find(g => g.kode === s.guruKode)?.nama || 'Tanpa Guru';
+            
+            if (!groupedSiswa[key]) groupedSiswa[key] = [];
+            groupedSiswa[key].push(s);
+          });
+        }
 
         return (
           <div className="space-y-4">
@@ -635,22 +667,36 @@ export default function AdminView() {
                   <p className="text-[11px] text-gray-400">Menaikkan tingkat kelas (7 ke 8, 8 ke 9) secara otomatis, dan mengarsipkan data kelas 9.</p>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    if (window.confirm('Apakah Anda yakin ingin memproses kenaikan kelas otomatis saat ini? Kelas 7->8, 8->9, dan kelas 9 akan dimasukkan ke arsip kelulusan.')) {
-                      runClassPromotionManually();
-                      alert('Proses kenaikan kelas berhasil dijalankan!');
-                    }
-                  }}
-                  className="bg-brand-primary text-white hover:bg-brand-accent px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
-                >
-                  <Plus size={13} />
-                  Jalankan Kenaikan Kelas
-                </button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    placeholder="Password Kenaikan Kelas..."
+                    value={promotionPassword}
+                    onChange={(e) => setPromotionPassword(e.target.value)}
+                    className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-brand-primary"
+                  />
+                  <button
+                    onClick={() => {
+                      if (promotionPassword !== app.promotionPassword) {
+                        alert('Password salah!');
+                        return;
+                      }
+                      if (window.confirm('Apakah Anda yakin ingin memproses kenaikan kelas otomatis saat ini? Kelas 7->8, 8->9, dan kelas 9 akan dimasukkan ke arsip kelulusan.')) {
+                        runClassPromotionManually();
+                        alert('Proses kenaikan kelas berhasil dijalankan!');
+                        setPromotionPassword('');
+                      }
+                    }}
+                    className="bg-brand-primary text-white hover:bg-brand-accent px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                  >
+                    <Plus size={13} />
+                    Jalankan Kenaikan Kelas
+                  </button>
+                </div>
                 <button
                   onClick={() => setShowSiswaForm(!showSiswaForm)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 justify-center mt-2 sm:mt-0"
                 >
                   {showSiswaForm ? <EyeOff size={13} /> : <Eye size={13} />}
                   {showSiswaForm ? 'Sembunyikan Form' : 'Tampilkan Form'}
@@ -812,11 +858,23 @@ export default function AdminView() {
             {/* Table */}
             <div className={`bg-white p-6 rounded-xl shadow-xs border border-gray-100 space-y-4 ${showSiswaForm ? 'xl:col-span-2' : 'xl:col-span-3'}`}>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2 border-b border-gray-100">
-                <h3 className="font-bold text-gray-800 text-base">Database Siswa Aktif (A-Z)</h3>
+                <h3 className="font-bold text-gray-800 text-base">Database Siswa Aktif</h3>
                 
                 {/* Search & Prediction block */}
-                <div className="relative w-full md:w-72">
-                  <div className="relative flex items-center">
+                <div className="flex gap-2 w-full md:w-auto relative">
+                  <select
+                    value={siswaGroupBy}
+                    onChange={(e) => setSiswaGroupBy(e.target.value as any)}
+                    className="bg-gray-50 border border-gray-300 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-brand-primary min-w-[130px]"
+                  >
+                    <option value="none">Tanpa Grup</option>
+                    <option value="jilid">Kelompokkan Jilid</option>
+                    <option value="kelas">Kelompokkan Kelas</option>
+                    <option value="guru">Kelompokkan Guru</option>
+                  </select>
+
+                  <div className="relative w-full md:w-64">
+                    <div className="relative flex items-center">
                     <Search className="absolute left-2.5 text-gray-400" size={14} />
                     <input
                       type="text"
@@ -867,6 +925,7 @@ export default function AdminView() {
                       )}
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
 
@@ -883,34 +942,45 @@ export default function AdminView() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {sortedAndFilteredSiswa.map(siswa => (
-                      <tr key={siswa.id} className="hover:bg-gray-50/50">
-                        <td className="p-3 font-semibold text-gray-800">{siswa.namaLengkap}</td>
-                        <td className="p-3">{siswa.gender === 'LK' ? 'LK' : 'PR'}</td>
-                        <td className="p-3 font-medium text-brand-accent">{getKelasLabel(siswa.kelasId)}</td>
-                        <td className="p-3">
-                          <span className="px-2 py-0.5 bg-brand-gold/15 text-brand-primary font-bold rounded">{siswa.jilid}</span>
-                        </td>
-                        <td className="p-3 font-mono font-medium">{siswa.guruKode}</td>
-                        <td className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => startEditSiswa(siswa)}
-                              className="text-brand-primary hover:text-brand-accent p-1 transition"
-                              title="Edit Data"
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            <button
-                              onClick={() => deleteSiswa(siswa.id)}
-                              className="text-red-500 hover:text-red-700 p-1 transition"
-                              title="Hapus Data"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                    {Object.entries(groupedSiswa).sort(([a], [b]) => a.localeCompare(b)).map(([groupName, groupSiswa]) => (
+                      <React.Fragment key={groupName}>
+                        {siswaGroupBy !== 'none' && (
+                          <tr className="bg-brand-primary/5 border-b border-brand-primary/10">
+                            <td colSpan={6} className="p-3 font-bold text-brand-primary">
+                              {groupName} ({groupSiswa.length} Siswa)
+                            </td>
+                          </tr>
+                        )}
+                        {groupSiswa.map(siswa => (
+                          <tr key={siswa.id} className="hover:bg-gray-50/50">
+                            <td className="p-3 font-semibold text-gray-800">{siswa.namaLengkap}</td>
+                            <td className="p-3">{siswa.gender === 'LK' ? 'LK' : 'PR'}</td>
+                            <td className="p-3 font-medium text-brand-accent">{getKelasLabel(siswa.kelasId)}</td>
+                            <td className="p-3">
+                              <span className="px-2 py-0.5 bg-brand-gold/15 text-brand-primary font-bold rounded">{siswa.jilid}</span>
+                            </td>
+                            <td className="p-3 font-mono font-medium">{siswa.guruKode}</td>
+                            <td className="p-3 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button
+                                  onClick={() => startEditSiswa(siswa)}
+                                  className="text-brand-primary hover:text-brand-accent p-1 transition"
+                                  title="Edit Data"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                                <button
+                                  onClick={() => deleteSiswa(siswa.id)}
+                                  className="text-red-500 hover:text-red-700 p-1 transition"
+                                  title="Hapus Data"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
                     ))}
                     {sortedAndFilteredSiswa.length === 0 && (
                       <tr>
@@ -984,6 +1054,17 @@ export default function AdminView() {
                     className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs outline-none font-mono focus:border-brand-primary"
                   />
                 </div>
+              </div>
+              
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">Password Login</label>
+                <input
+                  type="text"
+                  placeholder="Default: 123456"
+                  value={gPassword}
+                  onChange={(e) => setGPassword(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs outline-none focus:border-brand-primary"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -1342,14 +1423,14 @@ export default function AdminView() {
                           type="button"
                           onClick={() => toggleDayCheck(day)}
                           className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                            shiftHari.includes(day)
+                            (shiftHari || []).includes(day)
                               ? 'bg-brand-primary text-white'
                               : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                           }`}
                         >
                           <input
                             type="checkbox"
-                            checked={shiftHari.includes(day)}
+                            checked={(shiftHari || []).includes(day)}
                             readOnly
                             className="rounded text-brand-primary accent-brand-gold h-3 w-3"
                           />

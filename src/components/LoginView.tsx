@@ -8,7 +8,7 @@ interface LoginViewProps {
 }
 
 export default function LoginView({ role, onLoginSuccess }: LoginViewProps) {
-  const { login, userCredentialsList } = useApp();
+  const app = useApp();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -28,12 +28,12 @@ export default function LoginView({ role, onLoginSuccess }: LoginViewProps) {
     guru: 'from-emerald-600 to-emerald-800 bg-emerald-600',
   };
 
-  const currentCreds = userCredentialsList.find(c => c.role === role);
+  const currentCreds = app.userCredentialsList.find(c => c.role === role);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const success = login(role, username, password);
+    const success = app.login(role, username, password);
     if (success) {
       onLoginSuccess();
     } else {
@@ -76,17 +76,32 @@ export default function LoginView({ role, onLoginSuccess }: LoginViewProps) {
 
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
-              Username
+              {role === 'guru' ? 'Pilih Guru' : 'Username'}
             </label>
-            <input
-              type="text"
-              required
-              autoFocus
-              placeholder="Masukkan username Anda"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 text-xs outline-none focus:border-brand-primary focus:bg-white font-medium transition"
-            />
+            {role === 'guru' ? (
+              <select
+                required
+                autoFocus
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 text-xs outline-none focus:border-brand-primary focus:bg-white font-medium transition"
+              >
+                <option value="">-- Pilih Nama Guru --</option>
+                {app.guruBTQList.map(g => (
+                  <option key={g.kodeGuru} value={g.kodeGuru}>{g.kodeGuru} - {g.namaLengkap}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                required
+                autoFocus
+                placeholder="Masukkan username Anda"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-300 rounded-xl p-3 text-xs outline-none focus:border-brand-primary focus:bg-white font-medium transition"
+              />
+            )}
           </div>
 
           <div>
@@ -126,11 +141,17 @@ export default function LoginView({ role, onLoginSuccess }: LoginViewProps) {
           <span className="text-[9px] bg-brand-gold/20 text-[#114645] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full inline-block mb-1.5">
             Petunjuk Simulasi Login
           </span>
-          <p className="text-[11px] text-gray-600 font-medium">
-            Username: <span className="font-mono bg-gray-200 px-1 py-0.5 rounded font-bold text-gray-800">{currentCreds?.username}</span> • PIN: <span className="font-mono bg-gray-200 px-1 py-0.5 rounded font-bold text-gray-800">{currentCreds?.password || '(tidak diatur)'}</span>
-          </p>
+          {role === 'guru' ? (
+            <p className="text-[11px] text-gray-600 font-medium">
+              Pilih nama Anda, dan PIN default adalah <span className="font-mono bg-gray-200 px-1 py-0.5 rounded font-bold text-gray-800">123456</span> jika belum diatur admin.
+            </p>
+          ) : (
+            <p className="text-[11px] text-gray-600 font-medium">
+              Username: <span className="font-mono bg-gray-200 px-1 py-0.5 rounded font-bold text-gray-800">{currentCreds?.username}</span> • PIN: <span className="font-mono bg-gray-200 px-1 py-0.5 rounded font-bold text-gray-800">{currentCreds?.password || '(tidak diatur)'}</span>
+            </p>
+          )}
           <p className="text-[9px] text-gray-400 mt-1">
-            * Kredensial di atas dapat diganti kapan saja oleh Admin pada sub-menu "Kelola Akun Login".
+            * Kredensial di atas dapat diganti kapan saja oleh Admin.
           </p>
         </div>
       </div>

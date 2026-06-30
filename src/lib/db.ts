@@ -23,10 +23,26 @@ export const collections = {
   settings: collection(db, 'settings') // For userCredentials, activeRole, loggedInRoles
 };
 
+// Helper to remove undefined properties
+function removeUndefined(obj: any): any {
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefined);
+  } else if (obj !== null && typeof obj === 'object') {
+    const newObj: any = {};
+    for (const key in obj) {
+      if (obj[key] !== undefined) {
+        newObj[key] = removeUndefined(obj[key]);
+      }
+    }
+    return newObj;
+  }
+  return obj;
+}
+
 export async function syncToFirestore(collectionName: string, id: string, data: any) {
   try {
     const docRef = doc(db, collectionName, id);
-    await setDoc(docRef, data, { merge: true });
+    await setDoc(docRef, removeUndefined(data), { merge: true });
   } catch (error) {
     console.error(`Error syncing to firestore for ${collectionName}:`, error);
   }
@@ -47,7 +63,7 @@ export async function bulkSyncToFirestore(collectionName: string, items: any[], 
     for (const item of items) {
       const id = item[idField];
       if (id) {
-        await setDoc(doc(db, collectionName, id), item, { merge: true });
+        await setDoc(doc(db, collectionName, id), removeUndefined(item), { merge: true });
       }
     }
   } catch (error) {
