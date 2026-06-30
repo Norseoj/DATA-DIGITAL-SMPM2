@@ -19,7 +19,13 @@ export const initializeFirestoreWithDefaults = async (
   generateLogs: (siswas: Siswa[]) => CapaianHarian[],
   defaultCredentials: UserCredentials[]
 ) => {
-  const siswaSnap = await getDocs(collection(db, 'siswa'));
+  let siswaSnap;
+  try {
+    siswaSnap = await getDocs(collection(db, 'siswa'));
+  } catch (error) {
+    console.error("Error checking Firestore for initial seed. If permission is denied, check rules.", error);
+    return;
+  }
   
   if (siswaSnap.empty) {
     console.log("Firestore is empty, seeding with default data...");
@@ -51,6 +57,8 @@ export const initializeFirestoreWithDefaults = async (
     console.log("Seeding complete!");
   } else {
     console.log("Firestore already has data.");
+    // Force sync credentials in case new default credentials (like demo account) were added in code
+    await syncToFirestore('settings', 'credentials', { list: defaultCredentials });
   }
 };
 

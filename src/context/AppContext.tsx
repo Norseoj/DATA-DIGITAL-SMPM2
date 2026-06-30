@@ -94,6 +94,7 @@ const AppContext = createContext<AppContextProps | undefined>(undefined);
 export const defaultCredentials: UserCredentials[] = [
   { role: 'pj', username: 'pj', password: 'pj' },
   { role: 'admin', username: 'admin', password: 'admin' },
+  { role: 'admin', username: 'demo', password: 'demo' },
   { role: 'bendahara', username: 'bendahara', password: 'bendahara' },
   { role: 'guru', username: 'guru', password: 'guru' }
 ];
@@ -360,57 +361,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubSiswa = onSnapshot(collection(db, 'siswa'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as Siswa);
       if (data.length > 0) setSiswaList(data);
-    });
+    }, (error) => console.error("Error fetching siswa:", error));
 
     const unsubGuruBTQ = onSnapshot(collection(db, 'guruBTQ'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as GuruBTQ);
       if (data.length > 0) setGuruBTQList(data);
-    });
+    }, (error) => console.error("Error fetching guruBTQ:", error));
 
     const unsubGuruBinaan = onSnapshot(collection(db, 'guruBinaan'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as GuruBinaan);
       if (data.length > 0) setGuruBinaanList(data);
-    });
+    }, (error) => console.error("Error fetching guruBinaan:", error));
 
     const unsubJadwalShift = onSnapshot(collection(db, 'jadwalShift'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as JadwalShift);
       if (data.length > 0) setJadwalShiftList(data);
-    });
+    }, (error) => console.error("Error fetching jadwalShift:", error));
 
     const unsubHariLibur = onSnapshot(collection(db, 'hariLibur'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as HariLibur);
       if (data.length > 0) setHariLiburList(data);
-    });
+    }, (error) => console.error("Error fetching hariLibur:", error));
 
     const unsubKelas = onSnapshot(collection(db, 'kelas'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as Kelas);
       if (data.length > 0) setKelasList(data);
-    });
+    }, (error) => console.error("Error fetching kelas:", error));
 
     const unsubCapaianHarian = onSnapshot(collection(db, 'capaianHarian'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as CapaianHarian);
       if (data.length > 0) setCapaianHarianList(data);
-    });
+    }, (error) => console.error("Error fetching capaianHarian:", error));
 
     const unsubPindahSementara = onSnapshot(collection(db, 'pindahSementara'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as PindahSementara);
       if (data.length > 0) setPindahSementaraList(data);
-    });
+    }, (error) => console.error("Error fetching pindahSementara:", error));
 
     const unsubPengajuanTes = onSnapshot(collection(db, 'pengajuanTes'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as PengajuanTes);
       if (data.length > 0) setPengajuanTesList(data);
-    });
+    }, (error) => console.error("Error fetching pengajuanTes:", error));
 
     const unsubStokJilid = onSnapshot(collection(db, 'stokJilid'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as StokJilid);
       if (data.length > 0) setStokJilidList(data);
-    });
+    }, (error) => console.error("Error fetching stokJilid:", error));
 
     const unsubTransaksi = onSnapshot(collection(db, 'transaksiKeuangan'), (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as TransaksiKeuangan);
       if (data.length > 0) setTransaksiKeuanganList(data);
-    });
+    }, (error) => console.error("Error fetching transaksi:", error));
 
     const unsubSettings = onSnapshot(collection(db, 'settings'), (snapshot) => {
       snapshot.docs.forEach(doc => {
@@ -424,7 +425,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (data.list) setUserCredentialsList(data.list);
         }
       });
-    });
+    }, (error) => console.error("Error fetching settings:", error));
 
     return () => {
       unsubSiswa();
