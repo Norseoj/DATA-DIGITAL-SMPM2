@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppProvider, useApp, defaultSiswa, defaultGuruBTQ, defaultGuruBinaan, defaultJadwalShift, defaultHariLibur, defaultKelas, defaultStokJilid, defaultPengajuanTes, defaultTransaksi, generateHistoricalLogs } from './context/AppContext';
+import { AppProvider, useApp, defaultSiswa, defaultGuruBTQ, defaultGuruBinaan, defaultJadwalShift, defaultHariLibur, defaultKelas, defaultStokJilid, defaultPengajuanTes, defaultTransaksi, generateHistoricalLogs, defaultCredentials } from './context/AppContext';
 import DashboardData from './components/DashboardData';
 import PJView from './components/PJView';
 import AdminView from './components/AdminView';
@@ -30,7 +30,8 @@ function MainAppContent() {
       defaultStokJilid,
       defaultPengajuanTes,
       defaultTransaksi,
-      generateHistoricalLogs
+      generateHistoricalLogs,
+      defaultCredentials
     );
   }, []);
 

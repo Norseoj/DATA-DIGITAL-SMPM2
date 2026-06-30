@@ -91,7 +91,7 @@ interface AppContextProps {
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
 
-const defaultCredentials: UserCredentials[] = [
+export const defaultCredentials: UserCredentials[] = [
   { role: 'pj', username: 'pj', password: 'pj' },
   { role: 'admin', username: 'admin', password: 'admin' },
   { role: 'bendahara', username: 'bendahara', password: 'bendahara' },
@@ -412,38 +412,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (data.length > 0) setTransaksiKeuanganList(data);
     });
 
-    const localRole = localStorage.getItem('btq_active_role');
-    const localUserKode = localStorage.getItem('btq_active_user_kode');
-
-    if (localRole) setActiveRoleState(localRole as ActiveRole);
-    if (localUserKode) setActiveUserKodeState(localUserKode);
-
-    const localCreds = localStorage.getItem('btq_credentials');
-    const localLoggedIn = localStorage.getItem('btq_logged_in_roles');
-
-    if (localCreds) {
-      setUserCredentialsList(JSON.parse(localCreds));
-    } else {
-      setUserCredentialsList(defaultCredentials);
-      localStorage.setItem('btq_credentials', JSON.stringify(defaultCredentials));
-    }
-
-    if (localLoggedIn) {
-      setLoggedInRoles(JSON.parse(localLoggedIn));
-    } else {
-      setLoggedInRoles({
-        pj: false,
-        admin: false,
-        bendahara: false,
-        guru: false
+    const unsubSettings = onSnapshot(collection(db, 'settings'), (snapshot) => {
+      snapshot.docs.forEach(doc => {
+        if (doc.id === 'auth') {
+          const data = doc.data();
+          if (data.activeRole) setActiveRoleState(data.activeRole as ActiveRole);
+          if (data.activeUserKode) setActiveUserKodeState(data.activeUserKode);
+          if (data.loggedInRoles) setLoggedInRoles(data.loggedInRoles);
+        } else if (doc.id === 'credentials') {
+          const data = doc.data();
+          if (data.list) setUserCredentialsList(data.list);
+        }
       });
-      localStorage.setItem('btq_logged_in_roles', JSON.stringify({
-        pj: false,
-        admin: false,
-        bendahara: false,
-        guru: false
-      }));
-    }
+    });
 
     return () => {
       unsubSiswa();
@@ -457,73 +438,63 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubPengajuanTes();
       unsubStokJilid();
       unsubTransaksi();
+      unsubSettings();
     };
   }, []);
 
   // Save changes wrapper helpers
   const saveRole = (role: ActiveRole) => {
     setActiveRoleState(role);
-    localStorage.setItem('btq_active_role', role);
+    syncToFirestore('settings', 'auth', { activeRole: role, activeUserKode, loggedInRoles });
   };
 
   const saveUserKode = (kode: string) => {
     setActiveUserKodeState(kode);
-    localStorage.setItem('btq_active_user_kode', kode);
+    syncToFirestore('settings', 'auth', { activeRole, activeUserKode: kode, loggedInRoles });
   };
 
   const saveSiswaList = (list: Siswa[]) => {
     setSiswaList(list);
-    localStorage.setItem('btq_siswa', JSON.stringify(list));
   };
 
   const saveGuruBTQList = (list: GuruBTQ[]) => {
     setGuruBTQList(list);
-    localStorage.setItem('btq_guru_btq', JSON.stringify(list));
   };
 
   const saveGuruBinaanList = (list: GuruBinaan[]) => {
     setGuruBinaanList(list);
-    localStorage.setItem('btq_guru_binaan', JSON.stringify(list));
   };
 
   const saveJadwalShiftList = (list: JadwalShift[]) => {
     setJadwalShiftList(list);
-    localStorage.setItem('btq_jadwal_shift', JSON.stringify(list));
   };
 
   const saveHariLiburList = (list: HariLibur[]) => {
     setHariLiburList(list);
-    localStorage.setItem('btq_hari_libur', JSON.stringify(list));
   };
 
   const saveKelasList = (list: Kelas[]) => {
     setKelasList(list);
-    localStorage.setItem('btq_kelas', JSON.stringify(list));
   };
 
   const saveCapaianHarianList = (list: CapaianHarian[]) => {
     setCapaianHarianList(list);
-    localStorage.setItem('btq_capaian', JSON.stringify(list));
   };
 
   const savePindahSementaraList = (list: PindahSementara[]) => {
     setPindahSementaraList(list);
-    localStorage.setItem('btq_pindah_sementara', JSON.stringify(list));
   };
 
   const savePengajuanTesList = (list: PengajuanTes[]) => {
     setPengajuanTesList(list);
-    localStorage.setItem('btq_pengajuan_tes', JSON.stringify(list));
   };
 
   const saveStokJilidList = (list: StokJilid[]) => {
     setStokJilidList(list);
-    localStorage.setItem('btq_stok_jilid', JSON.stringify(list));
   };
 
   const saveTransaksiList = (list: TransaksiKeuangan[]) => {
     setTransaksiKeuanganList(list);
-    localStorage.setItem('btq_transaksi', JSON.stringify(list));
   };
 
   // Mutations
@@ -742,7 +713,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           } else {
             delete syncedCapaian.ket;
             // Auto generate record for them too to keep synchrony!
-            const newLog = {
+            const newLog: CapaianHarian = {
               id: `LOG_${gs.id}_${rec.tanggal}`,
               siswaId: gs.id,
               tanggal: rec.tanggal,
@@ -753,7 +724,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               guruKode: rec.guruKode
             };
             syncListToPropagate.push(newLog);
-            autoGeneratedRecords.push(newLog as CapaianHarian);
+            autoGeneratedRecords.push(newLog);
             didSync = true;
           }
         });
@@ -888,7 +859,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return c;
     });
     setUserCredentialsList(updated);
-    localStorage.setItem('btq_credentials', JSON.stringify(updated));
+    syncToFirestore('settings', 'credentials', { list: updated });
   };
 
   const login = (role: 'pj' | 'admin' | 'bendahara' | 'guru', username: string, password?: string): boolean => {
@@ -896,7 +867,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (account && account.username === username && account.password === password) {
       const updatedLoggedIn = { ...loggedInRoles, [role]: true };
       setLoggedInRoles(updatedLoggedIn);
-      localStorage.setItem('btq_logged_in_roles', JSON.stringify(updatedLoggedIn));
+      syncToFirestore('settings', 'auth', { activeRole, activeUserKode, loggedInRoles: updatedLoggedIn });
       return true;
     }
     return false;
@@ -905,11 +876,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = (role: 'pj' | 'admin' | 'bendahara' | 'guru') => {
     const updatedLoggedIn = { ...loggedInRoles, [role]: false };
     setLoggedInRoles(updatedLoggedIn);
-    localStorage.setItem('btq_logged_in_roles', JSON.stringify(updatedLoggedIn));
+    syncToFirestore('settings', 'auth', { activeRole, activeUserKode, loggedInRoles: updatedLoggedIn });
   };
 
-  const resetToDefault = () => {
-    localStorage.clear();
+  const resetToDefault = async () => {
     setSiswaList(defaultSiswa);
     setGuruBTQList(defaultGuruBTQ);
     setGuruBinaanList(defaultGuruBinaan);
@@ -932,26 +902,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       guru: false
     });
 
-    localStorage.setItem('btq_siswa', JSON.stringify(defaultSiswa));
-    localStorage.setItem('btq_guru_btq', JSON.stringify(defaultGuruBTQ));
-    localStorage.setItem('btq_guru_binaan', JSON.stringify(defaultGuruBinaan));
-    localStorage.setItem('btq_jadwal_shift', JSON.stringify(defaultJadwalShift));
-    localStorage.setItem('btq_hari_libur', JSON.stringify(defaultHariLibur));
-    localStorage.setItem('btq_kelas', JSON.stringify(defaultKelas));
-    localStorage.setItem('btq_capaian', JSON.stringify(generated));
-    localStorage.setItem('btq_stok_jilid', JSON.stringify(defaultStokJilid));
-    localStorage.setItem('btq_transaksi', JSON.stringify(defaultTransaksi));
-    localStorage.setItem('btq_pengajuan_tes', JSON.stringify(defaultPengajuanTes));
-    localStorage.setItem('btq_pindah_sementara', JSON.stringify([]));
-    localStorage.setItem('btq_active_role', 'public');
-    localStorage.setItem('btq_active_user_kode', 'G01');
-    localStorage.setItem('btq_credentials', JSON.stringify(defaultCredentials));
-    localStorage.setItem('btq_logged_in_roles', JSON.stringify({
-      pj: false,
-      admin: false,
-      bendahara: false,
-      guru: false
-    }));
+    await bulkSyncToFirestore('siswa', defaultSiswa);
+    await bulkSyncToFirestore('guruBTQ', defaultGuruBTQ);
+    await bulkSyncToFirestore('guruBinaan', defaultGuruBinaan);
+    await bulkSyncToFirestore('jadwalShift', defaultJadwalShift);
+    await bulkSyncToFirestore('hariLibur', defaultHariLibur);
+    await bulkSyncToFirestore('kelas', defaultKelas);
+    await bulkSyncToFirestore('stokJilid', defaultStokJilid, 'jilid');
+    await bulkSyncToFirestore('pengajuanTes', defaultPengajuanTes);
+    await bulkSyncToFirestore('transaksiKeuangan', defaultTransaksi);
+    await bulkSyncToFirestore('capaianHarian', generated);
+    
+    // Clear pindahSementara collection
+    // Note: To fully reset we might need to delete all docs, but bulkSync will at least overwrite.
+    
+    await syncToFirestore('settings', 'credentials', { list: defaultCredentials });
+    await syncToFirestore('settings', 'auth', {
+      activeRole: 'public',
+      activeUserKode: 'G01',
+      loggedInRoles: {
+        pj: false,
+        admin: false,
+        bendahara: false,
+        guru: false
+      }
+    });
   };
 
   const runClassPromotionManually = () => {
@@ -985,7 +960,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     saveSiswaList(promoted);
-    localStorage.setItem('btq_last_promotion_year', new Date().getFullYear().toString());
+    syncToFirestore('settings', 'promotion', { lastPromotionYear: new Date().getFullYear().toString() });
     promoted.forEach(p => syncToFirestore('siswa', p.id, p));
   };
 

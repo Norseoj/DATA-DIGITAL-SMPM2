@@ -1,9 +1,9 @@
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
-import { bulkSyncToFirestore } from './db';
+import { bulkSyncToFirestore, syncToFirestore } from './db';
 import {
   Siswa, GuruBTQ, GuruBinaan, JadwalShift, HariLibur, Kelas, 
-  StokJilid, PengajuanTes, TransaksiKeuangan, CapaianHarian
+  StokJilid, PengajuanTes, TransaksiKeuangan, CapaianHarian, UserCredentials
 } from '../types';
 
 export const initializeFirestoreWithDefaults = async (
@@ -16,7 +16,8 @@ export const initializeFirestoreWithDefaults = async (
   defaultStokJilid: StokJilid[],
   defaultPengajuanTes: PengajuanTes[],
   defaultTransaksi: TransaksiKeuangan[],
-  generateLogs: (siswas: Siswa[]) => CapaianHarian[]
+  generateLogs: (siswas: Siswa[]) => CapaianHarian[],
+  defaultCredentials: UserCredentials[]
 ) => {
   const siswaSnap = await getDocs(collection(db, 'siswa'));
   
@@ -34,8 +35,22 @@ export const initializeFirestoreWithDefaults = async (
 
     const generatedLogs = generateLogs(defaultSiswa);
     await bulkSyncToFirestore('capaianHarian', generatedLogs);
+
+    await syncToFirestore('settings', 'credentials', { list: defaultCredentials });
+    await syncToFirestore('settings', 'auth', {
+      activeRole: 'public',
+      activeUserKode: 'G01',
+      loggedInRoles: {
+        pj: false,
+        admin: false,
+        bendahara: false,
+        guru: false
+      }
+    });
+
     console.log("Seeding complete!");
   } else {
     console.log("Firestore already has data.");
   }
 };
+
