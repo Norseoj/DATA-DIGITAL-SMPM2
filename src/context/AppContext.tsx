@@ -76,7 +76,7 @@ interface AppContextProps {
   addPindahSementara: (pindah: Omit<PindahSementara, 'id' | 'timestamp'>) => void;
   clearPindahSementara: (id: string) => void;
 
-  ajukanTes: (siswaId: string, jilidAsal: JilidType, jilidTujuan: JilidType) => void;
+  ajukanTes: (siswaId: string, jilidAsal: JilidType, jilidTujuan: JilidType, keteranganTasmi?: string) => void;
   verifikasiTes: (id: string, status: 'Disetujui' | 'Ditolak', diujiOleh: string, catatan: string) => void;
 
   updateStokJilid: (jilid: JilidType, jumlah: number, isSet?: boolean) => void;
@@ -753,7 +753,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deleteFromFirestore('pindahSementara', id);
   };
 
-  const ajukanTes = (siswaId: string, jilidAsal: JilidType, jilidTujuan: JilidType) => {
+  const ajukanTes = (siswaId: string, jilidAsal: JilidType, jilidTujuan: JilidType, keteranganTasmi?: string) => {
     // Check if there is already an active pending request
     const exists = pengajuanTesList.some(p => p.siswaId === siswaId && p.status === 'Pending');
     if (exists) return;
@@ -764,7 +764,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       jilidAsal,
       jilidTujuan,
       tanggalPengajuan: new Date().toISOString().split('T')[0],
-      status: 'Pending'
+      status: 'Pending',
+      keteranganTasmi
     };
     savePengajuanTesList([...pengajuanTesList, newRequest]);
     syncToFirestore('pengajuanTes', newRequest.id, newRequest);

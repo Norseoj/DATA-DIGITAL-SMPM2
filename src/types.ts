@@ -121,6 +121,7 @@ export interface PengajuanTes {
   diujiOleh?: string;
   tanggalUji?: string;
   catatan?: string;
+  keteranganTasmi?: string;
 }
 
 export interface StokJilid {

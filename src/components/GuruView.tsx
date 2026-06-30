@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { JilidType, Siswa, CapaianCapaian, CapaianHarian } from '../types';
 import { BookOpen, Calendar, Save, Award, RefreshCw, Layers, ShieldCheck, UserCheck, Search, HelpCircle, BadgeAlert } from 'lucide-react';
 import { quranData } from '../data/quranData';
+import ModalAjukanTasmi from './ModalAjukanTasmi';
 
 /**
  * Validates a verse range or single verse input.
@@ -110,6 +111,9 @@ export default function GuruView() {
   const [kehadiranState, setKehadiranState] = useState<Record<string, 'Hadir' | 'Izin' | 'Sakit' | 'Alpha'>>({});
   const [capaianState, setCapaianState] = useState<Record<string, CapaianCapaian>>({});
   const [keteranganState, setKeteranganState] = useState<Record<string, string>>({});
+
+  // State for Tasmi modal
+  const [tasmiSiswa, setTasmiSiswa] = useState<Siswa | null>(null);
 
   // Active student in rekap bulanan to drill down
   const [selectedSiswaRekap, setSelectedSiswaRekap] = useState<string>('');
@@ -306,12 +310,14 @@ export default function GuruView() {
               handleCapaianChange(sId, jilid, 'ayat', '');
             }}
             disabled={hasJuz && !currentVal.juz}
-            className="bg-white border border-gray-300 rounded p-1 text-[11px] outline-none w-full disabled:opacity-50 disabled:bg-gray-50 font-sans text-gray-700 font-medium"
+            className="bg-white border border-gray-300 rounded p-1 text-[11px] outline-none w-full disabled:opacity-50 disabled:bg-gray-50 font-sans text-gray-700 font-medium font-arabic text-right dir-rtl"
+            style={{ direction: 'rtl' }}
           >
             <option value="">{hasJuz && !currentVal.juz ? 'Pilih Juz' : 'Pilih Surah...'}</option>
-            {availableSurahs.map(s => (
-              <option key={s.nama} value={s.nama}>{s.nama}</option>
-            ))}
+            {availableSurahs.map(s => {
+              const arabicName = s.nama.split(' (')[0];
+              return <option key={s.nama} value={s.nama}>{arabicName}</option>;
+            })}
           </select>
 
           {/* Ayat Dropdown */}
@@ -341,21 +347,23 @@ export default function GuruView() {
   };
 
   // Render Capaian Input fields depending on the student's Jilid
-  const renderCapaianInputFields = (siswa: Siswa) => {
+  const renderCapaianInputFields = (siswa: Siswa, isGroupInput: boolean = false) => {
     const jilid = siswa.jilid;
     const sId = siswa.id;
     const currentVal = capaianState[sId] || {};
     const isSyncJilid = ['Juz 27', 'Qur\'an', 'Ghorib', 'Tajwid', 'Finishing'].includes(jilid);
 
-    const isHadir = (kehadiranState[sId] || 'Hadir') === 'Hadir';
-    if (!isHadir) {
-      return <span className="text-gray-400 italic text-[11px]">Siswa tidak hadir</span>;
+    if (!isGroupInput) {
+      const isHadir = (kehadiranState[sId] || 'Hadir') === 'Hadir';
+      if (!isHadir) {
+        return <span className="text-gray-400 italic text-[11px]">Siswa tidak hadir</span>;
+      }
     }
 
     return (
       <div className="space-y-2">
         {/* Label indicator for sync groups */}
-        {isSyncJilid && (
+        {isSyncJilid && !isGroupInput && (
           <span className="inline-block text-[9px] bg-brand-primary/10 text-brand-primary px-1.5 py-0.5 rounded font-extrabold mb-1">
             🔗 Kelompok Level Sinkron
           </span>
@@ -670,8 +678,12 @@ export default function GuruView() {
     return (
       <button
         onClick={() => {
-          ajukanTes(siswa.id, siswa.jilid, target);
-          alert(`${buttonLabel} telah diajukan ke PJ.`);
+          if (siswa.jilid === 'Tahfidz') {
+            setTasmiSiswa(siswa);
+          } else {
+            ajukanTes(siswa.id, siswa.jilid, target);
+            alert(`${buttonLabel} telah diajukan ke PJ.`);
+          }
         }}
         className="bg-brand-gold text-brand-primary hover:bg-brand-gold/80 border border-brand-gold/40 font-bold px-2 py-1 rounded text-[10px] shadow-2xs transition whitespace-nowrap font-sans"
       >
@@ -783,91 +795,139 @@ export default function GuruView() {
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider">
-                      <th className="p-4" style={{ width: '50px' }}>No</th>
-                      <th className="p-4">Nama</th>
-                      <th className="p-4 text-center" style={{ width: '220px' }}>Kehadiran</th>
+                      <th className="p-4" style={{ width: '40px' }}>No</th>
+                      <th className="p-4" style={{ minWidth: '150px' }}>Nama</th>
+                      <th className="p-4 text-center" style={{ width: '120px' }}>Kehadiran</th>
                       <th className="p-4" style={{ width: '320px' }}>Capaian</th>
-                      <th className="p-4" style={{ width: '130px' }}>Ket</th>
+                      <th className="p-4" style={{ width: '80px' }}>Ket</th>
                       <th className="p-4">Catatan</th>
                       <th className="p-4 text-center">Ajukan Tes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {sortedSiswaList.map((siswa, index) => {
-                      // Check if temporary student
-                      const isTemp = tempSiswaIds.includes(siswa.id);
+                    {(() => {
+                      // Group by Jilid
+                      const groups = sortedSiswaList.reduce((acc, siswa) => {
+                        if (!acc[siswa.jilid]) acc[siswa.jilid] = [];
+                        acc[siswa.jilid].push(siswa);
+                        return acc;
+                      }, {} as Record<string, Siswa[]>);
 
-                      return (
-                        <tr key={siswa.id} className={`hover:bg-gray-50/50 ${isTemp ? 'bg-yellow-50/20' : ''}`}>
-                          <td className="p-4 font-mono font-bold text-gray-400">
-                            {index + 1}
-                          </td>
-                          <td className="p-4">
-                            <div className="font-bold text-gray-800 flex items-center gap-1.5">
-                              {siswa.namaLengkap}
-                              {isTemp && (
-                                <span className="bg-yellow-100 text-yellow-800 font-bold px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider">
-                                  Siswa Titipan
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-[10px] text-gray-400 block font-medium mt-0.5">{getSiswaKelasLabel(siswa.id)} • Jilid {siswa.jilid}</span>
-                          </td>
+                      const syncJilids = ['Juz 27', 'Qur\'an', 'Ghorib', 'Tajwid', 'Finishing'];
 
-                          <td className="p-4 text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              {['Hadir', 'Izin', 'Sakit', 'Alpha'].map((status) => {
-                                const isSelected = (kehadiranState[siswa.id] || 'Hadir') === status;
-                                let btnClass = "";
-                                if (status === 'Hadir') {
-                                  btnClass = isSelected ? "bg-emerald-600 text-white font-extrabold scale-105" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100";
-                                } else if (status === 'Izin') {
-                                  btnClass = isSelected ? "bg-yellow-500 text-white font-extrabold scale-105" : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100";
-                                } else if (status === 'Sakit') {
-                                  btnClass = isSelected ? "bg-orange-500 text-white font-extrabold scale-105" : "bg-orange-50 text-orange-700 hover:bg-orange-100";
-                                } else {
-                                  btnClass = isSelected ? "bg-red-600 text-white font-extrabold scale-105" : "bg-red-50 text-red-700 hover:bg-red-100";
-                                }
-                                return (
-                                  <button
-                                    key={status}
-                                    onClick={() => setKehadiranState(prev => ({ ...prev, [siswa.id]: status as any }))}
-                                    className={`px-2 py-1 text-[10px] font-extrabold rounded transition ${btnClass}`}
-                                  >
-                                    {status}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </td>
+                      let globalIndex = 0;
 
-                          <td className="p-4">
-                            {renderCapaianInputFields(siswa)}
-                          </td>
+                      return Object.entries(groups).map(([jilid, groupSiswas]) => {
+                        const isSyncGroup = syncJilids.includes(jilid);
 
-                          <td className="p-4">
-                            {renderKetField(siswa)}
-                          </td>
+                        return (
+                          <React.Fragment key={jilid}>
+                            {isSyncGroup && (
+                              <tr className="bg-brand-primary/5 border-b border-brand-primary/10">
+                                <td colSpan={3} className="p-4 text-brand-primary font-extrabold text-right uppercase tracking-wider text-[10px]">
+                                  Isi Capaian Kelompok {jilid} ➔
+                                </td>
+                                <td className="p-4">
+                                  {renderCapaianInputFields(groupSiswas[0], true)}
+                                </td>
+                                <td colSpan={3}></td>
+                              </tr>
+                            )}
+                            
+                            {groupSiswas.map((siswa) => {
+                              globalIndex++;
+                              const isTemp = tempSiswaIds.includes(siswa.id);
+                              
+                              const jilidLabel = ['Juz 27', 'Qur\'an', 'Finishing', 'Tahfidz'].includes(siswa.jilid) 
+                                ? siswa.jilid 
+                                : `Jilid ${siswa.jilid}`;
 
-                          <td className="p-4">
-                            <input
-                              type="text"
-                              placeholder="Catatan..."
-                              value={keteranganState[siswa.id] || ''}
-                              onChange={(e) => setKeteranganState({
-                                ...keteranganState,
-                                [siswa.id]: e.target.value
-                              })}
-                              className="w-full bg-gray-50 border border-gray-300 rounded px-2 py-1.5 text-xs outline-none focus:bg-white"
-                            />
-                          </td>
+                              return (
+                                <tr key={siswa.id} className={`hover:bg-gray-50/50 ${isTemp ? 'bg-yellow-50/20' : ''}`}>
+                                  <td className="p-4 font-mono font-bold text-gray-400">
+                                    {globalIndex}
+                                  </td>
+                                  <td className="p-4">
+                                    <div className="font-bold text-gray-800 flex items-center gap-1.5">
+                                      {siswa.namaLengkap}
+                                      {isTemp && (
+                                        <span className="bg-yellow-100 text-yellow-800 font-bold px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider">
+                                          Siswa Titipan
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] text-gray-400 block font-medium mt-0.5">{getSiswaKelasLabel(siswa.id)} • {jilidLabel}</span>
+                                  </td>
 
-                          <td className="p-4 text-center">
-                            {renderAjukanTesButton(siswa)}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                                  <td className="p-4 text-center">
+                                    <div className="flex items-center justify-center gap-1">
+                                      {[{ label: 'H', val: 'Hadir' }, { label: 'I', val: 'Izin' }, { label: 'S', val: 'Sakit' }, { label: 'A', val: 'Alpha' }].map((status) => {
+                                        const isSelected = (kehadiranState[siswa.id] || 'Hadir') === status.val;
+                                        let btnClass = "";
+                                        if (status.val === 'Hadir') {
+                                          btnClass = isSelected ? "bg-emerald-600 text-white font-extrabold scale-105" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100";
+                                        } else if (status.val === 'Izin') {
+                                          btnClass = isSelected ? "bg-yellow-500 text-white font-extrabold scale-105" : "bg-yellow-50 text-yellow-700 hover:bg-yellow-100";
+                                        } else if (status.val === 'Sakit') {
+                                          btnClass = isSelected ? "bg-orange-500 text-white font-extrabold scale-105" : "bg-orange-50 text-orange-700 hover:bg-orange-100";
+                                        } else {
+                                          btnClass = isSelected ? "bg-red-600 text-white font-extrabold scale-105" : "bg-red-50 text-red-700 hover:bg-red-100";
+                                        }
+                                        return (
+                                          <button
+                                            key={status.val}
+                                            title={status.val}
+                                            onClick={() => setKehadiranState(prev => ({ ...prev, [siswa.id]: status.val as any }))}
+                                            className={`w-6 h-6 flex items-center justify-center text-[10px] font-extrabold rounded transition ${btnClass}`}
+                                          >
+                                            {status.label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </td>
+
+                                  <td className="p-4">
+                                    {isSyncGroup ? (
+                                      (kehadiranState[siswa.id] || 'Hadir') === 'Hadir' ? (
+                                        <div className="text-center text-gray-400 italic text-[10px] bg-gray-50 py-1 rounded">
+                                          (Sama dgn Kelompok)
+                                        </div>
+                                      ) : (
+                                        <span className="text-gray-400 italic text-[11px]">Siswa tidak hadir</span>
+                                      )
+                                    ) : (
+                                      renderCapaianInputFields(siswa)
+                                    )}
+                                  </td>
+
+                                  <td className="p-4">
+                                    {renderKetField(siswa)}
+                                  </td>
+
+                                  <td className="p-4">
+                                    <input
+                                      type="text"
+                                      placeholder="Catatan..."
+                                      value={keteranganState[siswa.id] || ''}
+                                      onChange={(e) => setKeteranganState({
+                                        ...keteranganState,
+                                        [siswa.id]: e.target.value
+                                      })}
+                                      className="w-full bg-gray-50 border border-gray-300 rounded px-2 py-1.5 text-xs outline-none focus:bg-white"
+                                    />
+                                  </td>
+
+                                  <td className="p-4 text-center">
+                                    {renderAjukanTesButton(siswa)}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </React.Fragment>
+                        );
+                      });
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -926,6 +986,18 @@ export default function GuruView() {
             {renderRekapSiswaBulanan()}
           </div>
         </div>
+      )}
+
+      {tasmiSiswa && (
+        <ModalAjukanTasmi
+          siswa={tasmiSiswa}
+          onClose={() => setTasmiSiswa(null)}
+          onSubmit={(ket) => {
+            ajukanTes(tasmiSiswa.id, 'Tahfidz', 'Tahfidz', ket);
+            setTasmiSiswa(null);
+            alert(`Ajukan Tasmi' telah diajukan ke PJ.`);
+          }}
+        />
       )}
     </div>
   );
